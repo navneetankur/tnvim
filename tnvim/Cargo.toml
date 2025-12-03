@@ -1,0 +1,14 @@
+[package]
+name = "tnvim"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crossterm.workspace = true
+nvimapi.workspace = true
+rmp.workspace = true
+rmpv.workspace = true
+tokio.workspace = true
+log.workspace = true
+env_logger.workspace = true
+nvim-rs.workspace = true

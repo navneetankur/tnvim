@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["nvimapi","tnvim",]
+members = ["nvimapi", "nvimapisys","tnvim",]
 exclude = []
 
 [workspace.dependencies]

@@ -3,7 +3,7 @@ use log::debug;
 use nvim_rs::UiAttachOptions;
 use nvimapi;
 use rmpv::Value;
-use tokio::runtime::LocalRuntime;
+use tokio::{io::{AsyncReadExt, AsyncWriteExt}, runtime::LocalRuntime};
 mod handler;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
@@ -13,16 +13,31 @@ pub fn main() {
     rt.block_on(main_async());
 }
 async fn main_async() {
-    let stream = tokio::net::UnixStream::connect(SERVER).await.unwrap();
-    let (r,w) = stream.into_split();
+    let mut stream = UnixStream::connect(SERVER).unwrap();
     let handler = handler::RequestHandler{};
-    let w = w.compat_write();
-    let r = r.compat();
-    let (nvim, io_handler) = nvim_rs::Neovim::new(r, w, handler);
+    // let (nvim, io_handler) = nvim_rs::Neovim::new(r, w, handler);
     debug!("attaching");
-    nvim.ui_attach(65, 65, &UiAttachOptions::new()).await.unwrap();
-    debug!("attached");
+    let attach = Value::Array(vec![
+        Value::from(0), // request
+        Value::from(1), //msg_id
+        Value::from("nvim_ui_attach"), //fn_ name
+        Value::Array(vec![
+            Value::from(64), //width
+            Value::from(64), //height
+            Value::Map(
+                Vec::new(),
+            ),
+        ])
+    ]);
+    rmpv::encode::write_value(&mut stream, &attach).unwrap();
+    loop {
+        let val = rmpv::decode::read_value(&mut stream).unwrap();
+        println!("{val:?}");
+    }
+
+    // nvim.ui_attach(65, 65, &UiAttachOptions::new()).await.unwrap();
+    // debug!("attached");
 
     // Any error should probably be logged, as stderr is not visible to users.
-    io_handler.await.unwrap();
+    // io_handler.await.unwrap();
 }

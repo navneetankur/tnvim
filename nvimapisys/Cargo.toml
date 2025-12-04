@@ -5,7 +5,9 @@ edition = "2024"
 
 [dependencies]
 rmpv.workspace = true
+rmp-serde.workspace = true
 serde.workspace = true
+tokio = {workspace = true, features = ["sync"]}
 
 [lints]
 workspace = true

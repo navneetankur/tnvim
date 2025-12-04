@@ -36,6 +36,11 @@ impl ValueSeq for () {
         Value::Array(Default::default())
     }
 }
+impl ValueSeq for [();0] {
+    fn to_value(self) -> Value {
+        Value::Array(Default::default())
+    }
+}
 tuple_to_value!(V1,);
 tuple_to_value!(V1, V2);
 tuple_to_value!(V1, V2, V3);

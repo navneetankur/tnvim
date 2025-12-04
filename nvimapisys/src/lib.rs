@@ -5,10 +5,11 @@
 use core::ops::ControlFlow;
 use std::io::{Write, stdout};
 use rmpv::Value;
-use serde::{Deserialize, Serialize};
+// mod generated;
 mod nvimrpc;
 pub use nvimrpc::Nvimapi;
 pub mod error;
+pub use nvimrpc::TryFromValue;
 
 
 const VALUE_SUFFIX: &str = "_wv";
@@ -18,30 +19,89 @@ pub fn main() {
     let data = include_bytes!("nvimapi.msgpack");
     let v = rmpv::decode::read_value(&mut data.as_slice()).unwrap();
     let root = Vec::try_from(v).unwrap();
-    println!("{HEADER_COMMON}");
-    println!("{HEADER_VALUE}");
-    println!("{HEADER_SERDE}");
+    println!("{HEADER}");
     for (key, value) in root {
         if key.as_str().unwrap() == "functions" {
-            println!("impl Nvimrpc {{");
+            println!("impl Nvimapi {{");
             handle_functions(value);
             println!("}}");
+        } else if key.as_str().unwrap() == "ui_events" {
+            let mut buffer = Vec::new();
+            handle_ui_events(&value, &mut buffer);
+            stdout().write_all(&buffer).unwrap();
         }
     }
 }
 
-const HEADER_COMMON: &str = r###"
+fn handle_ui_events(value: &Value, w: &mut impl Write) {
+    let events = value.as_array().unwrap();
+    let mut event_names = Vec::new();
+    for event in events {
+        let name = value_get(event, "name").unwrap().as_str().unwrap();
+        let name = snake_to_pascal(name);
+        writeln!(w, r##"#[derive(Deserialize)]"##).unwrap();
+        writeln!(w, "pub struct {name} {{").unwrap();
+        event_names.push(name);
+        let params = value_get(event, "parameters").unwrap().as_array().unwrap();
+        // write inner struct of enum.
+        for param in params {
+            let param = param.as_array().unwrap();
+            let ptype = param[0].as_str().unwrap();
+            let ptype = return_type_to_value(ptype);
+            let pname = param[1].as_str().unwrap();
+            let pname = param_name_to(pname);
+            writeln!(w, "\t{pname}: {ptype},").unwrap();
+        }
+        writeln!(w, "}}").unwrap();
+    }
+    // write enum, with inner structs from above.
+    writeln!(w, r##"#[derive(Deserialize)]"##).unwrap();
+    writeln!(w, r##"#[serde(rename_all = "snake_case")]"##).unwrap();
+    writeln!(w, "enum UiEvent {{",).unwrap();
+    for name in event_names {
+        writeln!(w, "\t{name}({name}),").unwrap();
+    }
+    writeln!(w, "}}",).unwrap();
+}
+fn snake_to_pascal(snake: &str) -> String {
+    let mut rv = Vec::new();
+    let mut chars = snake.bytes();
+    let Some(first) = chars.next() else {return String::new()};
+    rv.push(first.to_ascii_uppercase());
+    let mut capitalize_next = false;
+    for char_ in chars {
+        if char_ == b'_' {
+            capitalize_next = true;
+            continue;
+        }
+        if capitalize_next { 
+            rv.push(char_.to_ascii_uppercase());
+            capitalize_next = false;
+        } else {
+            rv.push(char_);
+        }
+    }
+    // unchecked should be fine.
+    // but unsafe code attract eyes.
+    return String::from_utf8(rv).unwrap();
+}
+
+const HEADER: &str = r###"
+use crate::TryFromValue;
+use crate::Nvimapi;
+use rmpv::Value;
+use crate::error;
+use serde::{Deserialize, Serialize};
 type Nil = ()    ;
 type Boolean = bool;
 type Integer = i64;
 type Float = f64  ;
+#[derive(Serialize, Deserialize)]
 pub struct Buffer(pub Integer);
+#[derive(Serialize, Deserialize)]
 pub struct Window(pub Integer);
+#[derive(Serialize, Deserialize)]
 pub struct Tabpage(pub Integer);
-use crate::Nvimrpc;
-"###;
-const HEADER_VALUE: &str = r###"
-use rmpv::Value;
 type Array  = Vec<Value>;
 type Dict   = Vec<(Value,Value)>;
 type Object = Value;
@@ -60,59 +120,31 @@ impl From<Tabpage> for Value {
         Value::from(that.0)
     }
 }
-"###;
-const HEADER_SERDE: &str = r###"
-use serde::{Deserialize, Serialize};
-impl serde::Serialize for Buffer {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer
-    {
-        i64::serialize(&self.0, serializer)
+impl TryFromValue for Buffer {
+    fn try_from_value(value: Value) -> error::Result<Self> {
+        let Ok(rv) = Integer::try_from(value) else {
+            return error::with_msg("expected integer.");
+        };
+        return Ok(Self(rv));
     }
 }
-impl<'de> serde::Deserialize<'de> for Buffer {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>
-    {
-        Ok(Self(i64::deserialize(deserializer)?))
+impl TryFromValue for Window {
+    fn try_from_value(value: Value) -> error::Result<Self> {
+        let Ok(rv) = Integer::try_from(value) else {
+            return error::with_msg("expected integer.");
+        };
+        return Ok(Self(rv));
     }
 }
-impl serde::Serialize for Window {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer
-    {
-        i64::serialize(&self.0, serializer)
-    }
-}
-impl<'de> serde::Deserialize<'de> for Window {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>
-    {
-        Ok(Self(i64::deserialize(deserializer)?))
-    }
-}
-impl serde::Serialize for Tabpage {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer
-    {
-        i64::serialize(&self.0, serializer)
-    }
-}
-impl<'de> serde::Deserialize<'de> for Tabpage {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>
-    {
-        Ok(Self(i64::deserialize(deserializer)?))
+impl TryFromValue for Tabpage {
+    fn try_from_value(value: Value) -> error::Result<Self> {
+        let Ok(rv) = Integer::try_from(value) else {
+            return error::with_msg("expected integer.");
+        };
+        return Ok(Self(rv));
     }
 }
 "###;
-
 
 fn handle_functions(value: Value) {
     let functions = Vec::<Value>::try_from(value).unwrap();
@@ -134,13 +166,14 @@ fn handle_functions(value: Value) {
     }
 }
 
+// todo, replace return of impl Deserialize<'static> to D wher D: Deserialize<'static>;
 fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_value: bool, api_doc: &[&str]) -> ControlFlow<()> {
     buffer.clear();
     let deprecated = value_get(&fun, "deprecated_since");
     if deprecated.is_some() { return ControlFlow::Break(()); }
     let fn_name = value_get(&fun, "name").unwrap().as_str().unwrap();
-    let doc = get_doc_for_fn(fn_name, api_doc);
-    buffer.push_str(&doc);
+    // let doc = get_doc_for_fn(fn_name, api_doc);
+    // buffer.push_str(&doc);
     buffer.push_str("pub async ");
     buffer.push_str("fn ");
     buffer.push_str(fn_name.trim_prefix("nvim_"));
@@ -159,6 +192,7 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
                 param_type_to_value(p_type)
             } else {param_type_to_serde(p_type)};
         let p_name = param[1].as_str().unwrap();
+        let p_name = param_name_to(p_name);
         pnames.push(p_name);
         buffer.push_str(p_name);
         buffer.push_str(": ");
@@ -169,7 +203,9 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
     let ret_type = if use_value {return_type_to_value(ret_type)}
         else {return_type_to_serde(ret_type)};
     buffer.push_str(") -> ");
+    buffer.push_str("error::Result<");
     buffer.push_str(ret_type);
+    buffer.push_str(">");
     buffer.push_str(" {\n");
     {// inside of fn, just call the call_fn with  tuple as arg.
         buffer.push_str("\t"); // indentation, remove maybe
@@ -179,6 +215,7 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
         buffer.push('"');
         buffer.push_str(fn_name);
         buffer.push('"');
+        buffer.push_str(".into()");
         if pnames.is_empty() {
             buffer.push_str(", [();0]");
         } else {
@@ -228,6 +265,14 @@ fn value_get<'v>(map: &'v Value, key: &str) -> Option<&'v Value> {
     return None;
 }
 
+fn param_name_to(name: &str) -> &str {
+    match name {
+        "fn" => "fn_",
+        "type" => "type_",
+        s => s
+    }
+}
+
 fn param_type_to_value(type_: &str) -> &'static str {
     match type_ {
         "Nil"              => "Nil",
@@ -241,6 +286,7 @@ fn param_type_to_value(type_: &str) -> &'static str {
         "void"             => "()",
         "Array"            => "Array",
         "Dict"             => "Dict",
+        "Dictionary"       => "Dict",
         "Object"           => "Object",
         "ArrayOf(String)"  => "Vec<String>",
         "ArrayOf(Buffer)"  => "Vec<Buffer>",

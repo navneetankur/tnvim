@@ -119,10 +119,50 @@ macro_rules! impl_from_value {
     };
 }
 impl_from_value!(
-    String, Vec<(Value, Value)>, Vec<Value>, Vec<u8>, bool, f32, f64, i64, u64
+    String, Vec<(Value, Value)>, Vec<Value>, Vec<u8>, bool, f32, f64, i64, u64,
 );
 impl TryFromValue for Value {
     fn try_from_value(value: Value) -> error::Result<Self> {
         Ok(value)
+    }
+}
+
+impl TryFromValue for Vec<String> {
+    fn try_from_value(value: Value) -> error::Result<Self> {
+        let Value::Array(array) = value else {return error::with_msg("expected array.")};
+        let mut rv = Vec::with_capacity(array.len());
+        for value in array {
+            let Value::String(value) = value else {return error::with_msg("expected String")};
+            let Some(value) = value.into_str() else { return error::with_msg("string not utf8"); };
+            rv.push(value);
+        }
+        return Ok(rv);
+    }
+}
+impl TryFromValue for Vec<i64> {
+    fn try_from_value(value: Value) -> error::Result<Self> {
+        let Value::Array(array) = value else {return error::with_msg("expected array.")};
+        let mut rv = Vec::with_capacity(array.len());
+        for value in array {
+            let Ok(value) = i64::try_from(value) else {return error::with_msg("expected i64")};
+            rv.push(value);
+        }
+        return Ok(rv);
+    }
+}
+impl TryFromValue for Vec<Vec<(Value, Value)>> {
+    fn try_from_value(value: Value) -> error::Result<Self> where Self: Sized {
+        let Value::Array(array) = value else { return error::with_msg("expected array.") };
+        let mut rv = Vec::with_capacity(array.len());
+        for map in array {
+            let Value::Map(map) = map else {return error::with_msg("expected map.")};
+            rv.push(map);
+        }
+        return Ok(rv);
+    }
+}
+impl TryFromValue for () {
+    fn try_from_value(_: Value) -> error::Result<Self> where Self: Sized {
+        Ok(())
     }
 }

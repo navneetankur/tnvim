@@ -8,7 +8,7 @@ crossterm = "0.29"
 log = "0.4"
 indexmap = "2.12"
 rmp = "0.8"
-rmpv = {version = "1.3", features = ["serde"] }
+rmpv = {version = "1.3", features = ["with-serde"] }
 rmp-serde = "1.3"
 serde = {version = "1.0", features = ["derive"]}
 serde_repr = {version = "0.1"}
@@ -16,7 +16,10 @@ env_logger = "0.11"
 # nvim-rs = { version = "0.9", features = ["use_tokio"]}
 # switch back to crate.io version, when he release the version without async-traits macro usage.
 nvim-rs = { git = "https://github.com/KillTheMule/nvim-rs", rev = "4c85d61cc6fadc64fb67d8eb46e908f5a8723396", features = ["use_tokio"]}
+# match its version with nvim-rs
+tokio-util = { version = "0.7", features = ["compat"]}
 nvimapi = {path = "nvimapi"}
+
 tokio = {version = "1.48", features = ["net", "rt"]}
 
 [workspace.lints]

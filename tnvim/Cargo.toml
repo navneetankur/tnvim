@@ -9,6 +9,7 @@ nvimapi.workspace = true
 rmp.workspace = true
 rmpv.workspace = true
 tokio.workspace = true
+tokio-util.workspace = true
 log.workspace = true
 env_logger.workspace = true
 nvim-rs.workspace = true

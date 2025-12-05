@@ -78,7 +78,11 @@ fn deserilize_for_ui_event_enum(w: &mut impl Write, snakes: &[&str], pascals: &[
     write!(w, "{FIRST}").unwrap();
     for (&snake, pascal) in snakes.iter().zip(pascals) {
         writeln!(w, r#""{snake}" => {{"#).unwrap();
-        writeln!(w, "\tlet inner = {pascal}::deserialize(ContSeq::new(seq))?;").unwrap();
+        // writeln!(w, "\tlet inner = {pascal}::deserialize(ContSeq::new(seq))?;").unwrap();
+        writeln!(w, "\tlet Some(inner) = seq.next_element()? else {{").unwrap();
+        writeln!(w, "\t\treturn Err(DError::custom(msg));").unwrap();
+        writeln!(w, "}};").unwrap();
+
         writeln!(w, "\treturn Ok(UiEvent::{pascal}(inner));").unwrap();
         writeln!(w, "}},").unwrap();
     }

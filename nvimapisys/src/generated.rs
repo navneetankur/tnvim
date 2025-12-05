@@ -1163,7 +1163,10 @@ impl<'de> Deserialize<'de> for UiEvent {
                 };
                 match event_name.as_str() {
                 "mode_info_set" => {
-	let inner = ModeInfoSet::deserialize(ContSeq::new(seq))?;
+	let Some(inner) = seq.next_element()? else {
+        return Err(DError::custom(msg));
+    };
+	// let inner = ModeInfoSet::deserialize(ContSeq::new(seq))?;
 	return Ok(UiEvent::ModeInfoSet(inner));
 },
 "update_menu" => {

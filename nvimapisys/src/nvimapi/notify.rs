@@ -1,3 +1,4 @@
+use log::debug;
 use rmpv::Value;
 use serde::Deserialize;
 
@@ -28,13 +29,16 @@ impl<'de> Deserialize<'de> for Notify {
             where
                 A: serde::de::SeqAccess<'de>,
             {
+                debug!("Notify visitor");
                 let msg = "missing, expected 2 items";
                 let Some(name) = seq.next_element::<String>()? else { return Err(DError::custom(msg)) };
+                debug!("name is: {name}");
                 if name != "redraw" {
                     let Some(unknown) = seq.next_element::<Value>()? else { return Err(DError::custom(msg)) };
                     return Ok(Notify::Unknown(name, unknown));
                 }
                 //name is redraw
+                debug!("ready to get after redraw");
                 let Some(ui_events) = seq.next_element::<Vec<UiEvent>>()? else { return Err(DError::custom(msg)) };
                 return Ok(Notify::Redraw(ui_events));
             }

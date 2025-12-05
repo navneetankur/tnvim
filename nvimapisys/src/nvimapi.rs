@@ -7,6 +7,9 @@ use tokio::sync::{mpsc, oneshot};
 use crate::{error, nvimapi::valueseq::{SerialSeq, ValueSeq}};
 pub use crate::generated::{UiEvent, UiOptions};
 pub mod notify;
+pub const BUFFER_ID:  i8 = 0;
+pub const WINDOW_ID:  i8 = 1;
+pub const TABPAGE_ID: i8 = 2;
 // will keep a writer to encode with.
 // it will send its message(request) id to main loop.
 // and a channel rx. Where it will get redraw, request or notify messages.

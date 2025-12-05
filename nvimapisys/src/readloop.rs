@@ -15,7 +15,7 @@ impl ReadLoop {
             // let value = rmpv::decode::read_value(&mut reader).unwrap();
             // println!("{value}");
             let message: Message = rmp_serde::decode::from_read(&mut reader).unwrap();
-            println!("{message:?}");
+            // println!("{message:?}");
         }
     }
 }

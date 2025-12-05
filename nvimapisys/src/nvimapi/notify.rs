@@ -40,6 +40,7 @@ impl<'de> Deserialize<'de> for Notify {
                 //name is redraw
                 debug!("ready to get after redraw");
                 let Some(ui_events) = seq.next_element::<Vec<UiEvent>>()? else { return Err(DError::custom(msg)) };
+                debug!("got ui events");
                 return Ok(Notify::Redraw(ui_events));
             }
         }

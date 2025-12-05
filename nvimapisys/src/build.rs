@@ -46,9 +46,9 @@ fn handle_ui_events(value: &Value, w: &mut impl Write) {
     let mut event_names = Vec::with_capacity(events.len());
     let mut event_snake_names = Vec::with_capacity(events.len());
     for event in events {
-        let name = value_get(event, "name").unwrap().as_str().unwrap();
-        event_snake_names.push(name);
-        let name = snake_to_pascal(name);
+        let snake_name = value_get(event, "name").unwrap().as_str().unwrap();
+        event_snake_names.push(snake_name);
+        let name = snake_to_pascal(snake_name);
         writeln!(w, r##"#[derive(Deserialize, Debug)]"##).unwrap();
         writeln!(w, "pub struct {name} {{").unwrap();
         event_names.push(name);
@@ -67,7 +67,7 @@ fn handle_ui_events(value: &Value, w: &mut impl Write) {
     writeln!(w, "#[derive(Debug)]",).unwrap();
     writeln!(w, "pub enum UiEvent {{",).unwrap();
     for name in &event_names {
-        writeln!(w, "\t{name}({name}),").unwrap();
+        writeln!(w, "\t{name}(Vec<{name}>),").unwrap();
     }
     writeln!(w, "\tUnknown(String, Value),").unwrap();
     writeln!(w, "}}",).unwrap();
@@ -79,9 +79,12 @@ fn deserilize_for_ui_event_enum(w: &mut impl Write, snakes: &[&str], pascals: &[
     for (&snake, pascal) in snakes.iter().zip(pascals) {
         writeln!(w, r#""{snake}" => {{"#).unwrap();
         // writeln!(w, "\tlet inner = {pascal}::deserialize(ContSeq::new(seq))?;").unwrap();
-        writeln!(w, "\tlet Some(inner) = seq.next_element()? else {{").unwrap();
-        writeln!(w, "\t\treturn Err(DError::custom(msg));").unwrap();
-        writeln!(w, "}};").unwrap();
+        // writeln!(w, "\tlet Some(inner) = seq.next_element()? else {{").unwrap();
+        // writeln!(w, "\t\treturn Err(DError::custom(msg));").unwrap();
+        // writeln!(w, "}};").unwrap();
+        writeln!(w, "debug!(\"doing: {pascal}\");").unwrap();
+        writeln!(w, "\tlet inner = Vec::<{pascal}>::deserialize(ContSeq::new(seq))?;").unwrap();
+        writeln!(w, "debug!(\"done: {pascal}\");").unwrap();
 
         writeln!(w, "\treturn Ok(UiEvent::{pascal}(inner));").unwrap();
         writeln!(w, "}},").unwrap();
@@ -147,6 +150,7 @@ fn snake_to_pascal(snake: &str) -> String {
 }
 
 const HEADER: &str = r###"
+use log::debug;
 use serde::Deserializer;
 use crate::contseq::ContSeq;
 use crate::TryFromValue;
@@ -184,26 +188,35 @@ impl From<Tabpage> for Value {
 }
 impl TryFromValue for Buffer {
     fn try_from_value(value: Value) -> error::Result<Self> {
-        let Ok(rv) = Integer::try_from(value) else {
-            return error::with_msg("expected integer.");
+        let Value::Ext(id, _) = &value else {
+            return error::with_msg("expected msgpack ext.");
         };
-        return Ok(Self(rv));
+        if *id != BUFFER_ID {
+            return error::with_msg("expected id 0 for buffer");
+        }
+        return Ok(Self(value));
     }
 }
 impl TryFromValue for Window {
     fn try_from_value(value: Value) -> error::Result<Self> {
-        let Ok(rv) = Integer::try_from(value) else {
-            return error::with_msg("expected integer.");
+        let Value::Ext(id, _) = &value else {
+            return error::with_msg("expected msgpack ext.");
         };
-        return Ok(Self(rv));
+        if *id != WINDOW_ID {
+            return error::with_msg("expected id 1 for window");
+        }
+        return Ok(Self(value));
     }
 }
 impl TryFromValue for Tabpage {
     fn try_from_value(value: Value) -> error::Result<Self> {
-        let Ok(rv) = Integer::try_from(value) else {
-            return error::with_msg("expected integer.");
+        let Value::Ext(id, _) = &value else {
+            return error::with_msg("expected msgpack ext.");
         };
-        return Ok(Self(rv));
+        if *id != TABPAGE_ID {
+            return error::with_msg("expected id 2 for tabpage");
+        }
+        return Ok(Self(value));
     }
 }
 "###;

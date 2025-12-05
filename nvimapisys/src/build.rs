@@ -30,7 +30,7 @@ pub fn main() {
 
 fn handle_ui_options(value: &Value, w: &mut Vec<u8>) {
     let options = value.as_array().unwrap();
-    writeln!(w, "#[derive(serde::Serialize)]").unwrap();
+    writeln!(w, "#[derive(serde::Serialize, Debug)]").unwrap();
     writeln!(w, r##"#[serde(rename_all = "snake_case")]"##).unwrap();
     writeln!(w, "pub enum UiOptions {{").unwrap();
     for option in options {
@@ -49,7 +49,7 @@ fn handle_ui_events(value: &Value, w: &mut impl Write) {
         let name = value_get(event, "name").unwrap().as_str().unwrap();
         event_snake_names.push(name);
         let name = snake_to_pascal(name);
-        writeln!(w, r##"#[derive(Deserialize)]"##).unwrap();
+        writeln!(w, r##"#[derive(Deserialize, Debug)]"##).unwrap();
         writeln!(w, "pub struct {name} {{").unwrap();
         event_names.push(name);
         let params = value_get(event, "parameters").unwrap().as_array().unwrap();
@@ -64,10 +64,8 @@ fn handle_ui_events(value: &Value, w: &mut impl Write) {
         }
         writeln!(w, "}}").unwrap();
     }
-    // write enum, with inner structs from above.
-    // writeln!(w, r##"#[derive(Deserialize)]"##).unwrap();
-    // writeln!(w, r##"#[serde(rename_all = "snake_case")]"##).unwrap();
-    writeln!(w, "enum UiEvent {{",).unwrap();
+    writeln!(w, "#[derive(Debug)]",).unwrap();
+    writeln!(w, "pub enum UiEvent {{",).unwrap();
     for name in &event_names {
         writeln!(w, "\t{name}({name}),").unwrap();
     }
@@ -145,6 +143,7 @@ fn snake_to_pascal(snake: &str) -> String {
 }
 
 const HEADER: &str = r###"
+use serde::Deserializer;
 use crate::contseq::ContSeq;
 use crate::TryFromValue;
 use crate::Nvimapi;
@@ -155,11 +154,11 @@ use serde::{Deserialize, Serialize};
 type Boolean = bool;
 type Integer = i64;
 type Float = f64  ;
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Buffer(pub Integer);
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Window(pub Integer);
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Tabpage(pub Integer);
 type Array  = Vec<Value>;
 type Dict   = Pairs<Value,Value>;

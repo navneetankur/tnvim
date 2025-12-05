@@ -5,6 +5,7 @@ use rmpv::Value;
 use serde::Deserialize;
 use tokio::sync::{mpsc, oneshot};
 use crate::{error, nvimapi::valueseq::{SerialSeq, ValueSeq}};
+pub use crate::generated::{UiEvent, UiOptions};
 // will keep a writer to encode with.
 // it will send its message(request) id to main loop.
 // and a channel rx. Where it will get redraw, request or notify messages.

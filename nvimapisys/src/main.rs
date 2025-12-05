@@ -8,5 +8,5 @@ fn main() {
         .format_timestamp(None)
         .init();
     // nvimapisys::main();
-    nvimapisys::build::main();
+    nvimapisys::main();
 }

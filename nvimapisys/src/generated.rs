@@ -1,11 +1,9 @@
 
+use serde::Deserializer;
 use crate::contseq::ContSeq;
-use core::marker::PhantomData;
-
 use crate::TryFromValue;
 use crate::Nvimapi;
 use rmpv::Value;
-use serde::Deserializer;
 use crate::Pairs;
 use crate::error;
 use serde::{Deserialize, Serialize};
@@ -1067,7 +1065,7 @@ pub struct MsgHistoryClear {
 pub struct ErrorExit {
 	status: Integer,
 }
-enum UiEvent {
+pub enum UiEvent {
 	ModeInfoSet(ModeInfoSet),
 	UpdateMenu(UpdateMenu),
 	BusyStart(BusyStart),
@@ -1135,7 +1133,7 @@ enum UiEvent {
 	MsgHistoryShow(MsgHistoryShow),
 	MsgHistoryClear(MsgHistoryClear),
 	ErrorExit(ErrorExit),
-    Unknown(String, Value),
+	Unknown(String, Value),
 }
 
 impl<'de> Deserialize<'de> for UiEvent {
@@ -1158,26 +1156,298 @@ impl<'de> Deserialize<'de> for UiEvent {
                 A: serde::de::SeqAccess<'de>,
             {
                 use serde::de::{Error as DError, Visitor};
-                let msg = "expected 8 element";
+                let msg = "missing element, expected 2 elements";
                 let Some(event_name) = seq.next_element::<String>()? else {
                     return Err(DError::custom(msg));
                 };
                 match event_name.as_str() {
-                    "mode_change" => {
-                        let inner = ModeChange::deserialize(ContSeq::new(seq))?;
-                        return Ok(UiEvent::ModeChange(inner));
-                    },
-                    "mode_info_set" => {
-                        let inner = ModeInfoSet::deserialize(ContSeq::new(seq))?;
-                        return Ok(UiEvent::ModeInfoSet(inner));
-                    },
-                    o => {
-                        let inner = Value::deserialize(ContSeq::new(seq))?;
-                        return Ok(UiEvent::Unknown(o.to_string() ,inner));
-                    }
-                }
-            }
-        }
-    }
-}
+                "mode_info_set" => {
+	let inner = ModeInfoSet::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::ModeInfoSet(inner));
+},
+"update_menu" => {
+	let inner = UpdateMenu::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::UpdateMenu(inner));
+},
+"busy_start" => {
+	let inner = BusyStart::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::BusyStart(inner));
+},
+"busy_stop" => {
+	let inner = BusyStop::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::BusyStop(inner));
+},
+"mouse_on" => {
+	let inner = MouseOn::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MouseOn(inner));
+},
+"mouse_off" => {
+	let inner = MouseOff::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MouseOff(inner));
+},
+"mode_change" => {
+	let inner = ModeChange::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::ModeChange(inner));
+},
+"bell" => {
+	let inner = Bell::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::Bell(inner));
+},
+"visual_bell" => {
+	let inner = VisualBell::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::VisualBell(inner));
+},
+"flush" => {
+	let inner = Flush::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::Flush(inner));
+},
+"suspend" => {
+	let inner = Suspend::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::Suspend(inner));
+},
+"set_title" => {
+	let inner = SetTitle::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::SetTitle(inner));
+},
+"set_icon" => {
+	let inner = SetIcon::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::SetIcon(inner));
+},
+"screenshot" => {
+	let inner = Screenshot::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::Screenshot(inner));
+},
+"option_set" => {
+	let inner = OptionSet::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::OptionSet(inner));
+},
+"chdir" => {
+	let inner = Chdir::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::Chdir(inner));
+},
+"update_fg" => {
+	let inner = UpdateFg::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::UpdateFg(inner));
+},
+"update_bg" => {
+	let inner = UpdateBg::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::UpdateBg(inner));
+},
+"update_sp" => {
+	let inner = UpdateSp::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::UpdateSp(inner));
+},
+"resize" => {
+	let inner = Resize::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::Resize(inner));
+},
+"clear" => {
+	let inner = Clear::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::Clear(inner));
+},
+"eol_clear" => {
+	let inner = EolClear::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::EolClear(inner));
+},
+"cursor_goto" => {
+	let inner = CursorGoto::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::CursorGoto(inner));
+},
+"highlight_set" => {
+	let inner = HighlightSet::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::HighlightSet(inner));
+},
+"put" => {
+	let inner = Put::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::Put(inner));
+},
+"set_scroll_region" => {
+	let inner = SetScrollRegion::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::SetScrollRegion(inner));
+},
+"scroll" => {
+	let inner = Scroll::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::Scroll(inner));
+},
+"default_colors_set" => {
+	let inner = DefaultColorsSet::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::DefaultColorsSet(inner));
+},
+"hl_attr_define" => {
+	let inner = HlAttrDefine::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::HlAttrDefine(inner));
+},
+"hl_group_set" => {
+	let inner = HlGroupSet::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::HlGroupSet(inner));
+},
+"grid_resize" => {
+	let inner = GridResize::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::GridResize(inner));
+},
+"grid_clear" => {
+	let inner = GridClear::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::GridClear(inner));
+},
+"grid_cursor_goto" => {
+	let inner = GridCursorGoto::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::GridCursorGoto(inner));
+},
+"grid_line" => {
+	let inner = GridLine::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::GridLine(inner));
+},
+"grid_scroll" => {
+	let inner = GridScroll::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::GridScroll(inner));
+},
+"grid_destroy" => {
+	let inner = GridDestroy::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::GridDestroy(inner));
+},
+"win_pos" => {
+	let inner = WinPos::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WinPos(inner));
+},
+"win_float_pos" => {
+	let inner = WinFloatPos::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WinFloatPos(inner));
+},
+"win_external_pos" => {
+	let inner = WinExternalPos::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WinExternalPos(inner));
+},
+"win_hide" => {
+	let inner = WinHide::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WinHide(inner));
+},
+"win_close" => {
+	let inner = WinClose::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WinClose(inner));
+},
+"msg_set_pos" => {
+	let inner = MsgSetPos::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MsgSetPos(inner));
+},
+"win_viewport" => {
+	let inner = WinViewport::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WinViewport(inner));
+},
+"win_viewport_margins" => {
+	let inner = WinViewportMargins::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WinViewportMargins(inner));
+},
+"win_extmark" => {
+	let inner = WinExtmark::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WinExtmark(inner));
+},
+"popupmenu_show" => {
+	let inner = PopupmenuShow::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::PopupmenuShow(inner));
+},
+"popupmenu_hide" => {
+	let inner = PopupmenuHide::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::PopupmenuHide(inner));
+},
+"popupmenu_select" => {
+	let inner = PopupmenuSelect::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::PopupmenuSelect(inner));
+},
+"tabline_update" => {
+	let inner = TablineUpdate::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::TablineUpdate(inner));
+},
+"cmdline_show" => {
+	let inner = CmdlineShow::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::CmdlineShow(inner));
+},
+"cmdline_pos" => {
+	let inner = CmdlinePos::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::CmdlinePos(inner));
+},
+"cmdline_special_char" => {
+	let inner = CmdlineSpecialChar::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::CmdlineSpecialChar(inner));
+},
+"cmdline_hide" => {
+	let inner = CmdlineHide::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::CmdlineHide(inner));
+},
+"cmdline_block_show" => {
+	let inner = CmdlineBlockShow::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::CmdlineBlockShow(inner));
+},
+"cmdline_block_append" => {
+	let inner = CmdlineBlockAppend::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::CmdlineBlockAppend(inner));
+},
+"cmdline_block_hide" => {
+	let inner = CmdlineBlockHide::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::CmdlineBlockHide(inner));
+},
+"wildmenu_show" => {
+	let inner = WildmenuShow::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WildmenuShow(inner));
+},
+"wildmenu_select" => {
+	let inner = WildmenuSelect::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WildmenuSelect(inner));
+},
+"wildmenu_hide" => {
+	let inner = WildmenuHide::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::WildmenuHide(inner));
+},
+"msg_show" => {
+	let inner = MsgShow::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MsgShow(inner));
+},
+"msg_clear" => {
+	let inner = MsgClear::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MsgClear(inner));
+},
+"msg_showcmd" => {
+	let inner = MsgShowcmd::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MsgShowcmd(inner));
+},
+"msg_showmode" => {
+	let inner = MsgShowmode::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MsgShowmode(inner));
+},
+"msg_ruler" => {
+	let inner = MsgRuler::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MsgRuler(inner));
+},
+"msg_history_show" => {
+	let inner = MsgHistoryShow::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MsgHistoryShow(inner));
+},
+"msg_history_clear" => {
+	let inner = MsgHistoryClear::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::MsgHistoryClear(inner));
+},
+"error_exit" => {
+	let inner = ErrorExit::deserialize(ContSeq::new(seq))?;
+	return Ok(UiEvent::ErrorExit(inner));
+},
 
+        o => {
+            let inner = Value::deserialize(ContSeq::new(seq))?;
+            return Ok(UiEvent::Unknown(o.to_string() ,inner));
+        }
+    
+}
+} } } }
+#[derive(serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UiOptions {
+	Rgb,
+	ExtCmdline,
+	ExtPopupmenu,
+	ExtTabline,
+	ExtWildmenu,
+	ExtMessages,
+	ExtLinegrid,
+	ExtMultigrid,
+	ExtHlstate,
+	ExtTermcolors,
+}

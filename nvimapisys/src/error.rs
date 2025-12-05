@@ -63,3 +63,12 @@ impl From<rmpv::ext::Error> for Error {
         Self::from_inner(value)
     }
 }
+
+impl serde::de::Error for Error {
+    fn custom<T>(msg:T) -> Self where T:Display {
+        Error {
+            msg: msg.to_string().into(),
+            inner: None,
+        }
+    }
+}

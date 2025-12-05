@@ -1,11 +1,10 @@
-mod msgmapc;
-mod valueseq;
+use crate::{MsgToReader, msgrpc, valueseq};
 use core::{cell::{Cell, RefCell}, ops::DerefMut};
 use std::os::unix::net::UnixStream;
 use rmpv::Value;
 use serde::Deserialize;
 use tokio::sync::{mpsc, oneshot};
-use crate::{error, nvimrpc::valueseq::{SerialSeq, ValueSeq}};
+use crate::{error, nvimapi::valueseq::{SerialSeq, ValueSeq}};
 // will keep a writer to encode with.
 // it will send its message(request) id to main loop.
 // and a channel rx. Where it will get redraw, request or notify messages.
@@ -13,27 +12,14 @@ use crate::{error, nvimrpc::valueseq::{SerialSeq, ValueSeq}};
 pub struct Nvimapi
 {
     // (msgid, oneshot returner.)
-    tx: mpsc::Sender<MsgToReader>,
-    msgid: Cell<u32>,
-    write: RefCell<UnixStream>,
+    pub(crate) tx: mpsc::Sender<MsgToReader>,
+    pub(crate) msgid: Cell<u32>,
+    pub(crate) write: RefCell<UnixStream>,
 }
 pub struct ApiAndHandler {
     api: Nvimapi,
     handler: Box<dyn Handler>,
     rx: mpsc::Receiver<MsgFromNvim>,
-}
-pub enum MsgToReader {
-    PendingRequest(PendingRequest),
-    End,
-}
-impl MsgToReader {
-    pub fn new(msg_id: u32, sender: oneshot::Sender<Value>) -> Self {
-        Self::PendingRequest(PendingRequest { msg_id, sender })
-    }
-}
-struct PendingRequest {
-    msg_id: u32,
-    sender: oneshot::Sender<Value>,
 }
 pub trait Handler {
     fn notify(&self);
@@ -49,18 +35,6 @@ struct Notify;
 struct Request;
 struct Redraw;
 
-struct ReadLoop {
-    reader: UnixStream,
-    msg_id: u32,
-    rx: mpsc::Receiver<MsgToReader>,
-}
-
-impl ReadLoop {
-
-}
-
-// impl Processor {
-// }
 
 impl Nvimapi
 {
@@ -69,30 +43,32 @@ impl Nvimapi
         R: TryFromValue
     {
         let msg_id = self.get_next_msg_id();
-        let request = msgmapc::create_request_value(msg_id, fn_name, args);
+        let request = msgrpc::create_request_value(msg_id, fn_name, args);
         let mut w = self.write.borrow_mut();
         rmpv::encode::write_value(w.deref_mut(), &request).unwrap();
         let (sender, rx) = oneshot::channel::<Value>();
         let msg = MsgToReader::new(msg_id, sender);
-        self.tx.send(msg).await?;
-        let rv = rx.await?;
-        return R::try_from_value(rv);
+        // self.tx.send(msg).await?;
+        // let rv = rx.await?;
+        // return R::try_from_value(rv);
+        return error::with_msg("return value not implemented yet.");
     }
 
-    pub async fn call_fn<R,S>(&self, fn_name: &str, args: S) -> error::Result<R>
+    pub async fn call_fn<D,S>(&self, fn_name: &str, args: S) -> error::Result<D>
     where 
-        R: Deserialize<'static>,
+        D: Deserialize<'static>,
         S: SerialSeq,
     {
         let msg_id = self.get_next_msg_id();
-        let request = msgmapc::create_request_ser(msg_id, fn_name, args);
+        let request = msgrpc::create_request_ser(msg_id, fn_name, args);
         let mut w = self.write.borrow_mut();
         rmp_serde::encode::write_named(w.deref_mut(), &request)?;
         let (sender, rx) = oneshot::channel::<Value>();
         let msg = MsgToReader::new(msg_id, sender);
-        self.tx.send(msg).await?;
-        let rv = rx.await?;
-        return Ok(R::deserialize(rv)?);
+        // self.tx.send(msg).await?;
+        // let rv = rx.await?;
+        // return Ok(D::deserialize(rv)?);
+        return error::with_msg("return value not implemented yet.");
     }
     fn get_next_msg_id(&self) -> u32 {
         let msg_id = self.msgid.get();

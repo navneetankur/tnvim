@@ -8,7 +8,7 @@ use crate::{error, TryFromValue};
 
 /// a vec of tuple of elements,
 /// pretending to be map for serilization purpose.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Pairs<K = Value, V = K> {
     inner: Vec<(K, V)>,
 }

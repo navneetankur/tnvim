@@ -10,11 +10,11 @@ use serde::{Deserialize, Serialize};
 type Boolean = bool;
 type Integer = i64;
 type Float = f64  ;
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Buffer(pub Integer);
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Window(pub Integer);
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Tabpage(pub Integer);
 type Array  = Vec<Value>;
 type Dict   = Pairs<Value,Value>;
@@ -730,112 +730,112 @@ pub async fn win_text_height_wv(&self, window: Window, opts: Dict, ) -> error::R
 	self.call_fn_wv("nvim_win_text_height".into(), (window, opts, )).await
 }
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct ModeInfoSet {
 	enabled: Boolean,
 	cursor_styles: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct UpdateMenu {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct BusyStart {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct BusyStop {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MouseOn {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MouseOff {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct ModeChange {
 	mode: String,
 	mode_idx: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Bell {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct VisualBell {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Flush {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Suspend {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct SetTitle {
 	title: String,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct SetIcon {
 	icon: String,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Screenshot {
 	path: String,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct OptionSet {
 	name: String,
 	value: Object,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Chdir {
 	path: String,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct UpdateFg {
 	fg: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct UpdateBg {
 	bg: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct UpdateSp {
 	sp: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Resize {
 	width: Integer,
 	height: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Clear {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct EolClear {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CursorGoto {
 	row: Integer,
 	col: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct HighlightSet {
 	attrs: Dict,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Put {
 	str: String,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct SetScrollRegion {
 	top: Integer,
 	bot: Integer,
 	left: Integer,
 	right: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Scroll {
 	count: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct DefaultColorsSet {
 	rgb_fg: Integer,
 	rgb_bg: Integer,
@@ -843,35 +843,35 @@ pub struct DefaultColorsSet {
 	cterm_fg: Integer,
 	cterm_bg: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct HlAttrDefine {
 	id: Integer,
 	rgb_attrs: Dict,
 	cterm_attrs: Dict,
 	info: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct HlGroupSet {
 	name: String,
 	id: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GridResize {
 	grid: Integer,
 	width: Integer,
 	height: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GridClear {
 	grid: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GridCursorGoto {
 	grid: Integer,
 	row: Integer,
 	col: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GridLine {
 	grid: Integer,
 	row: Integer,
@@ -879,7 +879,7 @@ pub struct GridLine {
 	data: Array,
 	wrap: Boolean,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GridScroll {
 	grid: Integer,
 	top: Integer,
@@ -889,11 +889,11 @@ pub struct GridScroll {
 	rows: Integer,
 	cols: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GridDestroy {
 	grid: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WinPos {
 	grid: Integer,
 	win: Window,
@@ -902,7 +902,7 @@ pub struct WinPos {
 	width: Integer,
 	height: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WinFloatPos {
 	grid: Integer,
 	win: Window,
@@ -913,27 +913,27 @@ pub struct WinFloatPos {
 	mouse_enabled: Boolean,
 	zindex: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WinExternalPos {
 	grid: Integer,
 	win: Window,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WinHide {
 	grid: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WinClose {
 	grid: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MsgSetPos {
 	grid: Integer,
 	row: Integer,
 	scrolled: Boolean,
 	sep_char: String,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WinViewport {
 	grid: Integer,
 	win: Window,
@@ -944,7 +944,7 @@ pub struct WinViewport {
 	line_count: Integer,
 	scroll_delta: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WinViewportMargins {
 	grid: Integer,
 	win: Window,
@@ -953,7 +953,7 @@ pub struct WinViewportMargins {
 	left: Integer,
 	right: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WinExtmark {
 	grid: Integer,
 	win: Window,
@@ -962,7 +962,7 @@ pub struct WinExtmark {
 	row: Integer,
 	col: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct PopupmenuShow {
 	items: Array,
 	selected: Integer,
@@ -970,21 +970,21 @@ pub struct PopupmenuShow {
 	col: Integer,
 	grid: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct PopupmenuHide {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct PopupmenuSelect {
 	selected: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct TablineUpdate {
 	current: Tabpage,
 	tabs: Array,
 	current_buffer: Buffer,
 	buffers: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CmdlineShow {
 	content: Array,
 	pos: Integer,
@@ -994,77 +994,78 @@ pub struct CmdlineShow {
 	level: Integer,
 	hl_id: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CmdlinePos {
 	pos: Integer,
 	level: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CmdlineSpecialChar {
 	c: String,
 	shift: Boolean,
 	level: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CmdlineHide {
 	level: Integer,
 	abort: Boolean,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CmdlineBlockShow {
 	lines: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CmdlineBlockAppend {
 	lines: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CmdlineBlockHide {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WildmenuShow {
 	items: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WildmenuSelect {
 	selected: Integer,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct WildmenuHide {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MsgShow {
 	kind: String,
 	content: Array,
 	replace_last: Boolean,
 	history: Boolean,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MsgClear {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MsgShowcmd {
 	content: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MsgShowmode {
 	content: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MsgRuler {
 	content: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MsgHistoryShow {
 	entries: Array,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MsgHistoryClear {
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct ErrorExit {
 	status: Integer,
 }
+#[derive(Debug)]
 pub enum UiEvent {
 	ModeInfoSet(ModeInfoSet),
 	UpdateMenu(UpdateMenu),
@@ -1437,7 +1438,7 @@ impl<'de> Deserialize<'de> for UiEvent {
     
 }
 } } } }
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum UiOptions {
 	Rgb,

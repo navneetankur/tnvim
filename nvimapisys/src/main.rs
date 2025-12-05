@@ -7,6 +7,6 @@ fn main() {
         // .format_timestamp(Some(env_logger::TimestampPrecision::Seconds))
         .format_timestamp(None)
         .init();
-    // nvimapisys::main();
     nvimapisys::main();
+    // nvimapisys::build::main();
 }

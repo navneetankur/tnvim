@@ -1,10 +1,11 @@
 use rmpv::Value;
 use serde::{Deserialize, de::Error as DError};
 
-pub(crate) struct Response {
-    msgid: u32,
-    error: Value,
-    result: Value,
+#[derive(Debug)]
+pub struct Response {
+    pub msgid: u32,
+    pub error: Value,
+    pub result: Value,
 }
 
 impl<'de> Deserialize<'de> for Response {

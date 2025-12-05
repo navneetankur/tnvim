@@ -53,14 +53,14 @@ fn handle_ui_events(value: &Value, w: &mut impl Write) {
         writeln!(w, "pub struct {name} {{").unwrap();
         event_names.push(name);
         let params = value_get(event, "parameters").unwrap().as_array().unwrap();
-        // write inner struct of enum.
+        // write fields of inner struct of enum.
         for param in params {
             let param = param.as_array().unwrap();
             let ptype = param[0].as_str().unwrap();
             let ptype = return_type_to_value(ptype);
             let pname = param[1].as_str().unwrap();
             let pname = param_name_to(pname);
-            writeln!(w, "\t{pname}: {ptype},").unwrap();
+            writeln!(w, "\tpub {pname}: {ptype},").unwrap();
         }
         writeln!(w, "}}").unwrap();
     }
@@ -111,7 +111,7 @@ impl<'de> Deserialize<'de> for UiEvent {
             where
                 A: serde::de::SeqAccess<'de>,
             {
-                use serde::de::{Error as DError, Visitor};
+                use serde::de::{Error as DError};
                 let msg = "missing element, expected 2 elements";
                 let Some(event_name) = seq.next_element::<String>()? else {
                     return Err(DError::custom(msg));

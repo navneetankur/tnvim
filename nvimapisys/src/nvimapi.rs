@@ -6,6 +6,7 @@ use serde::Deserialize;
 use tokio::sync::{mpsc, oneshot};
 use crate::{error, nvimapi::valueseq::{SerialSeq, ValueSeq}};
 pub use crate::generated::{UiEvent, UiOptions};
+pub mod notify;
 // will keep a writer to encode with.
 // it will send its message(request) id to main loop.
 // and a channel rx. Where it will get redraw, request or notify messages.
@@ -20,21 +21,13 @@ pub struct Nvimapi
 pub struct ApiAndHandler {
     api: Nvimapi,
     handler: Box<dyn Handler>,
-    rx: mpsc::Receiver<MsgFromNvim>,
+    // rx: mpsc::Receiver<MsgFromNvim>,
 }
 pub trait Handler {
     fn notify(&self);
     fn redraw(&self);
     fn request(&self);
 }
-enum MsgFromNvim {
-    Notify(Notify),
-    Request(Request),
-    Redraw(Redraw),
-}
-struct Notify;
-struct Request;
-struct Redraw;
 
 
 impl Nvimapi

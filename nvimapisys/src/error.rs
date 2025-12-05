@@ -1,10 +1,13 @@
 use core::fmt::Display;
 use std::borrow::Cow;
+
+use rmpv::Value;
 pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Debug)]
 pub struct Error {
     msg: Cow<'static, str>,
     inner: Option<Box<dyn core::error::Error>>,
+    inner_value: Option<Box<Value>>,
 }
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -17,6 +20,9 @@ impl Display for Error {
             }
             write!(f, "{inner}")?;
         }
+        if let Some(value) = &self.inner_value {
+            write!(f, "value: {value}")?;
+        }
         return Ok(());
     }
 }
@@ -24,22 +30,36 @@ impl core::error::Error for Error{}
 
 pub fn with_msg<T>(msg: impl Into<Cow<'static, str>>) -> Result<T> {
     Err(
-        Error { msg: msg.into(), inner: None }
+        Error::from_msg(msg)
     )
 }
 pub fn with_inner<T>(inner: impl core::error::Error + 'static) -> Result<T> {
     Err(
-        Error { msg: "".into(), inner: Some(Box::new(inner)) }
+        Error::from_inner(inner)
     )
 }
 pub fn with_msg_inner<T>(msg: impl Into<Cow<'static, str>>, inner: impl core::error::Error + 'static) -> Result<T> {
     Err(
-        Error { msg: msg.into(), inner: Some(Box::new(inner)) }
+        Error::new(msg, Some(inner), None)
     )
 }
 impl Error {
+    pub fn new(msg: impl Into<Cow<'static, str>>, inner: Option<impl core::error::Error + 'static>, inner_value: Option<Box<Value>>) -> Self {
+        let inner: Option<Box<dyn core::error::Error + 'static>> = 
+            if let Some(inner) = inner {
+                Some(Box::new(inner))
+            } else {None};
+        Self { msg: msg.into(), inner: inner, inner_value }
+    }
+
     pub fn from_inner(inner: impl core::error::Error + 'static) -> Self {
-        Error { msg: "".into(), inner: Some(Box::new(inner)) }
+        Error { msg: "".into(), inner: Some(Box::new(inner)), inner_value: None }
+    }
+    pub fn from_msg(msg: impl Into<Cow<'static, str>>) -> Self {
+        Error { msg: msg.into(), inner: None, inner_value: None }
+    }
+    pub fn from_value(value: Value) -> Self {
+        Error { msg: "".into(), inner: None, inner_value: Some(Box::new(value)) }
     }
 }
 
@@ -69,6 +89,7 @@ impl serde::de::Error for Error {
         Error {
             msg: msg.to_string().into(),
             inner: None,
+            inner_value: None,
         }
     }
 }

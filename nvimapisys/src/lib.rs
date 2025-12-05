@@ -2,10 +2,12 @@
 #![feature(type_alias_impl_trait)]
 #![feature(trim_prefix_suffix)]
 // mod out;
+mod pairs;
+pub use pairs::Pairs;
 use core::ops::ControlFlow;
 use std::io::{Write, stdout};
 use rmpv::Value;
-// mod generated;
+mod generated;
 mod nvimrpc;
 pub use nvimrpc::Nvimapi;
 pub mod error;
@@ -90,9 +92,9 @@ const HEADER: &str = r###"
 use crate::TryFromValue;
 use crate::Nvimapi;
 use rmpv::Value;
+use crate::Pairs;
 use crate::error;
 use serde::{Deserialize, Serialize};
-type Nil = ()    ;
 type Boolean = bool;
 type Integer = i64;
 type Float = f64  ;
@@ -103,7 +105,7 @@ pub struct Window(pub Integer);
 #[derive(Serialize, Deserialize)]
 pub struct Tabpage(pub Integer);
 type Array  = Vec<Value>;
-type Dict   = Vec<(Value,Value)>;
+type Dict   = Pairs<Value,Value>;
 type Object = Value;
 impl From<Buffer> for Value {
     fn from(that: Buffer) -> Self {
@@ -167,10 +169,12 @@ fn handle_functions(value: Value) {
 }
 
 // todo, replace return of impl Deserialize<'static> to D wher D: Deserialize<'static>;
-fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_value: bool, api_doc: &[&str]) -> ControlFlow<()> {
+fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_value: bool, api_doc: &[&str],) -> ControlFlow<()> {
     buffer.clear();
     let deprecated = value_get(&fun, "deprecated_since");
-    if deprecated.is_some() { return ControlFlow::Break(()); }
+    if deprecated.is_some() {
+        return ControlFlow::Break(());
+    }
     let fn_name = value_get(&fun, "name").unwrap().as_str().unwrap();
     // let doc = get_doc_for_fn(fn_name, api_doc);
     // buffer.push_str(&doc);
@@ -180,13 +184,16 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
     if use_value {
         buffer.push_str(VALUE_SUFFIX);
     }
+    let generic_template_position = buffer.len();
     buffer.push_str("(&mut self, ");
     let params = value_get(&fun, "parameters").unwrap().as_array().unwrap();
     let mut pnames = Vec::with_capacity(params.len());
     for param in params {
         let param = param.as_array().unwrap();
         let p_type = param[0].as_str().unwrap();
-        if ignored_types.contains(&p_type) { return ControlFlow::Break(()); }
+        if ignored_types.contains(&p_type) {
+            return ControlFlow::Break(());
+        }
         let p_type =
             if use_value {
                 param_type_to_value(p_type)
@@ -201,7 +208,20 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
     }
     let ret_type = value_get(&fun, "return_type").unwrap().as_str().unwrap();
     let ret_type = if use_value {return_type_to_value(ret_type)}
-        else {return_type_to_serde(ret_type)};
+        else {
+            let ret_type = return_type_to_serde(ret_type);
+            if ret_type == "impl Deserialize<'static>" {
+                // this does not work yet. So need to rewrite it in template form.
+                // Until rust compiler becomes able to handle it.
+                buffer.insert_str(
+                    generic_template_position,
+                    "<D: Deserialize<'static>>"
+                );
+                "D"
+            } else {
+                ret_type
+            }
+        };
     buffer.push_str(") -> ");
     buffer.push_str("error::Result<");
     buffer.push_str(ret_type);
@@ -275,7 +295,7 @@ fn param_name_to(name: &str) -> &str {
 
 fn param_type_to_value(type_: &str) -> &'static str {
     match type_ {
-        "Nil"              => "Nil",
+        "Nil"              => "()",
         "Boolean"          => "Boolean",
         "Integer"          => "Integer",
         "Float"            => "Float",
@@ -303,7 +323,7 @@ fn return_type_to_value(type_: &str) -> &'static str {
 }
 fn param_type_to_serde(type_: &str) -> &'static str {
     match type_ {
-        "Nil"              => "Nil",
+        "Nil"              => "()",
         "Boolean"          => "Boolean",
         "Integer"          => "Integer",
         "Float"            => "Float",
@@ -327,7 +347,7 @@ fn param_type_to_serde(type_: &str) -> &'static str {
 }
 fn return_type_to_serde(type_: &str) -> &'static str {
     match type_ {
-        "Nil"              => "Nil",
+        "Nil"              => "()",
         "Boolean"          => "Boolean",
         "Integer"          => "Integer",
         "Float"            => "Float",

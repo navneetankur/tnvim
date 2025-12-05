@@ -8,6 +8,7 @@ const VALUE_SUFFIX: &str = "_wv";
 const API_DOC_FILE: &str = "/usr/share/nvim/runtime/doc/api.txt";
 
 pub fn main() {
+    println!("cargo::rerun-if-changed=nvimapi.msgpack");
     let mut api_file = File::open("nvimapi.msgpack").unwrap();
     let v = rmpv::decode::read_value(&mut api_file).unwrap();
     drop(api_file);
@@ -71,6 +72,21 @@ fn handle_ui_events(w: &mut impl Write, value: &Value,) {
     }
     writeln!(w, "\tUnknown(Box<(String, Value)>),").unwrap();
     writeln!(w, "}}",).unwrap();
+    {// an fn which will give snake name.
+     // to UiEvent enum.
+        let text = r#"
+        impl UiEvent {
+            pub fn name(&self) -> &'static str {
+                match self {
+        "#;
+        let end_braces = "}}}";
+        w.write_all(text.as_bytes()).unwrap();
+        for (name, &snake) in event_names.iter().zip(&event_snake_names) {
+            writeln!(w, "Self::{name}(_) => \"{snake}\",").unwrap();
+        }
+        w.write_all(b"Self::Unknown(_) => \"unknown\"").unwrap();
+        w.write_all(end_braces.as_bytes()).unwrap();
+    }
     deserilize_for_ui_event_enum(w, &event_snake_names, &event_names);
 }
 

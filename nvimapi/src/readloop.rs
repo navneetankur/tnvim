@@ -10,11 +10,20 @@ pub(crate) struct ReadLoop {
 }
 
 impl ReadLoop {
-    pub fn start(&mut self, mut reader: UnixStream, rx: mpsc::Receiver<MsgToReader>) {
+    pub fn start(
+        &mut self,
+        mut reader: UnixStream,
+        rx: mpsc::Receiver<MsgToReader>,
+    ) {
         loop {
             // let value = rmpv::decode::read_value(&mut reader).unwrap();
             // println!("{value}");
             let message: Message = rmp_serde::decode::from_read(&mut reader).unwrap();
+            match message {
+                Message::Request(request) => todo!(),
+                Message::Response(response) => todo!(),
+                Message::Notification(notify) => todo!(),
+            }
             // println!("{message:?}");
         }
     }

@@ -1,4 +1,4 @@
-use crate::{MsgToReader, msgrpc, valueseq};
+use crate::{MsgToReader, msgrpc::{self, RESPONSE_CODE}, nvimapi::notification::Notification, valueseq};
 use core::{cell::{Cell, RefCell}, ops::DerefMut};
 use std::os::unix::net::UnixStream;
 use rmpv::Value;
@@ -6,7 +6,7 @@ use serde::Deserialize;
 use tokio::sync::{mpsc, oneshot};
 use crate::{error, nvimapi::valueseq::{SerialSeq, ValueSeq}};
 pub use crate::generated::{UiEvent, UiOptions};
-pub mod notify;
+pub mod notification;
 pub const BUFFER_ID:  i8 = 0;
 pub const WINDOW_ID:  i8 = 1;
 pub const TABPAGE_ID: i8 = 2;
@@ -21,20 +21,41 @@ pub struct Nvimapi
     pub(crate) msgid: Cell<u32>,
     pub(crate) write: RefCell<UnixStream>,
 }
-pub struct ApiAndHandler {
+pub struct ApiAndHandler<H: Handler> {
     api: Nvimapi,
-    handler: Box<dyn Handler>,
+    handler: H,
     // rx: mpsc::Receiver<MsgFromNvim>,
 }
 pub trait Handler {
-    fn notify(&self);
-    fn redraw(&self);
-    fn request(&self);
+    async fn notify(&self, notification: Notification);
+    async fn request(&self);
 }
 
 
 impl Nvimapi
 {
+    pub fn send_response(&self, msgid: i32, error: impl serde::Serialize, result: impl serde::Serialize) -> error::Result<()> {
+        let mut w = self.write.borrow_mut();
+        rmp_serde::encode::write_named(w.deref_mut(), &(
+            RESPONSE_CODE,
+            msgid,
+            error,
+            result,
+        ))?;
+        drop(w);
+        return Ok(());
+    }
+    pub fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()> {
+        let mut w = self.write.borrow_mut();
+        rmpv::encode::write_value(w.deref_mut(), &Value::Array(vec![
+            Value::from(RESPONSE_CODE),
+            Value::from(msgid),
+            error,
+            result,
+        ]))?;
+        drop(w);
+        return Ok(());
+    }
     pub async fn call_fn_wv<R>(&self, fn_name: String, args: impl ValueSeq) -> error::Result<R>
     where 
         R: TryFromValue
@@ -42,7 +63,7 @@ impl Nvimapi
         let msg_id = self.get_next_msg_id();
         let request = msgrpc::create_request_value(msg_id, fn_name, args);
         let mut w = self.write.borrow_mut();
-        rmpv::encode::write_value(w.deref_mut(), &request).unwrap();
+        rmpv::encode::write_value(w.deref_mut(), &request)?;
         let (sender, rx) = oneshot::channel::<Value>();
         let msg = MsgToReader::new(msg_id, sender);
         // self.tx.send(msg).await?;

@@ -1,8 +1,8 @@
 use rmpv::Value;
 use crate::valueseq::{SerialSeq, ValueSeq};
-const REQUEST_CODE: u8 = 0;
-const RESPONSE_CODE: u8 = 1;
-const NOTIFICATION_CODE: u8 = 2;
+pub const REQUEST_CODE: u8 = 0;
+pub const RESPONSE_CODE: u8 = 1;
+pub const NOTIFICATION_CODE: u8 = 2;
 pub fn create_request_value(msg_id: u32, fn_name: String, args: impl ValueSeq) -> Value {
     Value::Array(vec![
         Value::from(REQUEST_CODE),

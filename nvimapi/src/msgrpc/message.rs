@@ -6,13 +6,13 @@ pub use request::Request;
 mod response;
 pub use response::Response;
 
-use crate::{contseq::ContSeq, msgrpc::{NOTIFICATION_CODE, REQUEST_CODE, RESPONSE_CODE}, nvimapi::notify::Notify};
+use crate::{contseq::ContSeq, msgrpc::{NOTIFICATION_CODE, REQUEST_CODE, RESPONSE_CODE}, nvimapi::notification::Notification};
 
 #[derive(Debug)]
 pub enum Message {
     Request(Request),
     Response(Response),
-    Notification(Notify),
+    Notification(Notification),
 }
 
 impl<'de> Deserialize<'de> for Message {
@@ -41,7 +41,7 @@ impl<'de> Deserialize<'de> for Message {
                 let Some(type_) = seq.next_element::<u8>()? else {return Err(DError::custom(msg))};
                 match type_ {
                     NOTIFICATION_CODE => {
-                        let inner = Notify::deserialize(ContSeq::new(seq))?;
+                        let inner = Notification::deserialize(ContSeq::new(seq))?;
                         return Ok(Message::Notification(inner));
                     },
                     RESPONSE_CODE => {

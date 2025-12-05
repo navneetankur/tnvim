@@ -106,3 +106,8 @@ impl serde::de::Error for Error {
         }
     }
 }
+impl From<rmpv::encode::Error> for Error {
+    fn from(value: rmpv::encode::Error) -> Self {
+        Error::from_inner(value)
+    }
+}

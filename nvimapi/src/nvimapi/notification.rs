@@ -4,12 +4,12 @@ use serde::Deserialize;
 
 use crate::nvimapi::UiEvent;
 #[derive(Debug)]
-pub enum Notify {
+pub enum Notification {
     Redraw(Vec<UiEvent>),
-    Unknown(String, Value),
+    Unknown(Box<(String, Value)>),
 }
 
-impl<'de> Deserialize<'de> for Notify {
+impl<'de> Deserialize<'de> for Notification {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de> 
@@ -19,7 +19,7 @@ impl<'de> Deserialize<'de> for Notify {
         use serde::de::Error as DError;
         struct NVisitor;
         impl<'de> serde::de::Visitor<'de> for NVisitor {
-            type Value = Notify;
+            type Value = Notification;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 formatter.write_str("seq containing nvim notification.")
@@ -33,11 +33,11 @@ impl<'de> Deserialize<'de> for Notify {
                 let Some(name) = seq.next_element::<String>()? else { return Err(DError::custom(msg)) };
                 if name != "redraw" {
                     let Some(unknown) = seq.next_element::<Value>()? else { return Err(DError::custom(msg)) };
-                    return Ok(Notify::Unknown(name, unknown));
+                    return Ok(Notification::Unknown(Box::new((name, unknown))));
                 }
                 //name is redraw
                 let Some(ui_events) = seq.next_element::<Vec<UiEvent>>()? else { return Err(DError::custom(msg)) };
-                return Ok(Notify::Redraw(ui_events));
+                return Ok(Notification::Redraw(ui_events));
             }
         }
 

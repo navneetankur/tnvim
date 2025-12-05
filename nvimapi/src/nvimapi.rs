@@ -1,4 +1,4 @@
-use crate::{MsgToReader, msgrpc::{self, RESPONSE_CODE}, nvimapi::notification::Notification, valueseq};
+use crate::{MsgToReader, handler::Handler, msgrpc::{self, RESPONSE_CODE, Request}, nvimapi::notification::Notification, valueseq};
 use core::{cell::{Cell, RefCell}, ops::DerefMut};
 use std::os::unix::net::UnixStream;
 use rmpv::Value;
@@ -17,21 +17,10 @@ pub const TABPAGE_ID: i8 = 2;
 pub struct Nvimapi
 {
     // (msgid, oneshot returner.)
-    pub(crate) tx: mpsc::Sender<MsgToReader>,
+    pub(crate) tx_to_reader: std::sync::mpsc::SyncSender<MsgToReader>,
     pub(crate) msgid: Cell<u32>,
     pub(crate) write: RefCell<UnixStream>,
 }
-pub struct ApiAndHandler<H: Handler> {
-    api: Nvimapi,
-    handler: H,
-    // rx: mpsc::Receiver<MsgFromNvim>,
-}
-pub trait Handler {
-    async fn notify(&self, notification: Notification);
-    async fn request(&self);
-}
-
-
 impl Nvimapi
 {
     pub fn send_response(&self, msgid: i32, error: impl serde::Serialize, result: impl serde::Serialize) -> error::Result<()> {
@@ -66,10 +55,9 @@ impl Nvimapi
         rmpv::encode::write_value(w.deref_mut(), &request)?;
         let (sender, rx) = oneshot::channel::<Value>();
         let msg = MsgToReader::new(msg_id, sender);
-        // self.tx.send(msg).await?;
-        // let rv = rx.await?;
-        // return R::try_from_value(rv);
-        return error::with_msg("return value not implemented yet.");
+        self.tx_to_reader.send(msg);
+        let rv = rx.await?;
+        return R::try_from_value(rv);
     }
 
     pub async fn call_fn<D,S>(&self, fn_name: &str, args: S) -> error::Result<D>
@@ -83,10 +71,9 @@ impl Nvimapi
         rmp_serde::encode::write_named(w.deref_mut(), &request)?;
         let (sender, rx) = oneshot::channel::<Value>();
         let msg = MsgToReader::new(msg_id, sender);
-        // self.tx.send(msg).await?;
-        // let rv = rx.await?;
-        // return Ok(D::deserialize(rv)?);
-        return error::with_msg("return value not implemented yet.");
+        self.tx_to_reader.send(msg);
+        let rv = rx.await?;
+        return Ok(D::deserialize(rv)?);
     }
     fn get_next_msg_id(&self) -> u32 {
         let msg_id = self.msgid.get();

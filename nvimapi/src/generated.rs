@@ -1,12 +1,10 @@
 
+use crate::nvimapi::{TABPAGE_ID, WINDOW_ID, BUFFER_ID};
 use log::debug;
 use serde::Deserializer;
 use crate::contseq::ContSeq;
 use crate::TryFromValue;
 use crate::Nvimapi;
-use crate::nvimapi::BUFFER_ID;
-use crate::nvimapi::TABPAGE_ID;
-use crate::nvimapi::WINDOW_ID;
 use rmpv::Value;
 use crate::Pairs;
 use crate::error;
@@ -1150,7 +1148,7 @@ pub enum UiEvent {
 	MsgHistoryShow(Vec<MsgHistoryShow>),
 	MsgHistoryClear(Vec<MsgHistoryClear>),
 	ErrorExit(Vec<ErrorExit>),
-	Unknown(String, Value),
+	Unknown(Box<(String, Value)>),
 }
 
 impl<'de> Deserialize<'de> for UiEvent {
@@ -1179,411 +1177,277 @@ impl<'de> Deserialize<'de> for UiEvent {
                 };
                 match event_name.as_str() {
                 "mode_info_set" => {
-debug!("doing: ModeInfoSet");
 	let inner = Vec::<ModeInfoSet>::deserialize(ContSeq::new(seq))?;
-debug!("done: ModeInfoSet");
 	return Ok(UiEvent::ModeInfoSet(inner));
 },
 "update_menu" => {
-debug!("doing: UpdateMenu");
 	let inner = Vec::<UpdateMenu>::deserialize(ContSeq::new(seq))?;
-debug!("done: UpdateMenu");
 	return Ok(UiEvent::UpdateMenu(inner));
 },
 "busy_start" => {
-debug!("doing: BusyStart");
 	let inner = Vec::<BusyStart>::deserialize(ContSeq::new(seq))?;
-debug!("done: BusyStart");
 	return Ok(UiEvent::BusyStart(inner));
 },
 "busy_stop" => {
-debug!("doing: BusyStop");
 	let inner = Vec::<BusyStop>::deserialize(ContSeq::new(seq))?;
-debug!("done: BusyStop");
 	return Ok(UiEvent::BusyStop(inner));
 },
 "mouse_on" => {
-debug!("doing: MouseOn");
 	let inner = Vec::<MouseOn>::deserialize(ContSeq::new(seq))?;
-debug!("done: MouseOn");
 	return Ok(UiEvent::MouseOn(inner));
 },
 "mouse_off" => {
-debug!("doing: MouseOff");
 	let inner = Vec::<MouseOff>::deserialize(ContSeq::new(seq))?;
-debug!("done: MouseOff");
 	return Ok(UiEvent::MouseOff(inner));
 },
 "mode_change" => {
-debug!("doing: ModeChange");
 	let inner = Vec::<ModeChange>::deserialize(ContSeq::new(seq))?;
-debug!("done: ModeChange");
 	return Ok(UiEvent::ModeChange(inner));
 },
 "bell" => {
-debug!("doing: Bell");
 	let inner = Vec::<Bell>::deserialize(ContSeq::new(seq))?;
-debug!("done: Bell");
 	return Ok(UiEvent::Bell(inner));
 },
 "visual_bell" => {
-debug!("doing: VisualBell");
 	let inner = Vec::<VisualBell>::deserialize(ContSeq::new(seq))?;
-debug!("done: VisualBell");
 	return Ok(UiEvent::VisualBell(inner));
 },
 "flush" => {
-debug!("doing: Flush");
 	let inner = Vec::<Flush>::deserialize(ContSeq::new(seq))?;
-debug!("done: Flush");
 	return Ok(UiEvent::Flush(inner));
 },
 "suspend" => {
-debug!("doing: Suspend");
 	let inner = Vec::<Suspend>::deserialize(ContSeq::new(seq))?;
-debug!("done: Suspend");
 	return Ok(UiEvent::Suspend(inner));
 },
 "set_title" => {
-debug!("doing: SetTitle");
 	let inner = Vec::<SetTitle>::deserialize(ContSeq::new(seq))?;
-debug!("done: SetTitle");
 	return Ok(UiEvent::SetTitle(inner));
 },
 "set_icon" => {
-debug!("doing: SetIcon");
 	let inner = Vec::<SetIcon>::deserialize(ContSeq::new(seq))?;
-debug!("done: SetIcon");
 	return Ok(UiEvent::SetIcon(inner));
 },
 "screenshot" => {
-debug!("doing: Screenshot");
 	let inner = Vec::<Screenshot>::deserialize(ContSeq::new(seq))?;
-debug!("done: Screenshot");
 	return Ok(UiEvent::Screenshot(inner));
 },
 "option_set" => {
-debug!("doing: OptionSet");
 	let inner = Vec::<OptionSet>::deserialize(ContSeq::new(seq))?;
-debug!("done: OptionSet");
 	return Ok(UiEvent::OptionSet(inner));
 },
 "chdir" => {
-debug!("doing: Chdir");
 	let inner = Vec::<Chdir>::deserialize(ContSeq::new(seq))?;
-debug!("done: Chdir");
 	return Ok(UiEvent::Chdir(inner));
 },
 "update_fg" => {
-debug!("doing: UpdateFg");
 	let inner = Vec::<UpdateFg>::deserialize(ContSeq::new(seq))?;
-debug!("done: UpdateFg");
 	return Ok(UiEvent::UpdateFg(inner));
 },
 "update_bg" => {
-debug!("doing: UpdateBg");
 	let inner = Vec::<UpdateBg>::deserialize(ContSeq::new(seq))?;
-debug!("done: UpdateBg");
 	return Ok(UiEvent::UpdateBg(inner));
 },
 "update_sp" => {
-debug!("doing: UpdateSp");
 	let inner = Vec::<UpdateSp>::deserialize(ContSeq::new(seq))?;
-debug!("done: UpdateSp");
 	return Ok(UiEvent::UpdateSp(inner));
 },
 "resize" => {
-debug!("doing: Resize");
 	let inner = Vec::<Resize>::deserialize(ContSeq::new(seq))?;
-debug!("done: Resize");
 	return Ok(UiEvent::Resize(inner));
 },
 "clear" => {
-debug!("doing: Clear");
 	let inner = Vec::<Clear>::deserialize(ContSeq::new(seq))?;
-debug!("done: Clear");
 	return Ok(UiEvent::Clear(inner));
 },
 "eol_clear" => {
-debug!("doing: EolClear");
 	let inner = Vec::<EolClear>::deserialize(ContSeq::new(seq))?;
-debug!("done: EolClear");
 	return Ok(UiEvent::EolClear(inner));
 },
 "cursor_goto" => {
-debug!("doing: CursorGoto");
 	let inner = Vec::<CursorGoto>::deserialize(ContSeq::new(seq))?;
-debug!("done: CursorGoto");
 	return Ok(UiEvent::CursorGoto(inner));
 },
 "highlight_set" => {
-debug!("doing: HighlightSet");
 	let inner = Vec::<HighlightSet>::deserialize(ContSeq::new(seq))?;
-debug!("done: HighlightSet");
 	return Ok(UiEvent::HighlightSet(inner));
 },
 "put" => {
-debug!("doing: Put");
 	let inner = Vec::<Put>::deserialize(ContSeq::new(seq))?;
-debug!("done: Put");
 	return Ok(UiEvent::Put(inner));
 },
 "set_scroll_region" => {
-debug!("doing: SetScrollRegion");
 	let inner = Vec::<SetScrollRegion>::deserialize(ContSeq::new(seq))?;
-debug!("done: SetScrollRegion");
 	return Ok(UiEvent::SetScrollRegion(inner));
 },
 "scroll" => {
-debug!("doing: Scroll");
 	let inner = Vec::<Scroll>::deserialize(ContSeq::new(seq))?;
-debug!("done: Scroll");
 	return Ok(UiEvent::Scroll(inner));
 },
 "default_colors_set" => {
-debug!("doing: DefaultColorsSet");
 	let inner = Vec::<DefaultColorsSet>::deserialize(ContSeq::new(seq))?;
-debug!("done: DefaultColorsSet");
 	return Ok(UiEvent::DefaultColorsSet(inner));
 },
 "hl_attr_define" => {
-debug!("doing: HlAttrDefine");
 	let inner = Vec::<HlAttrDefine>::deserialize(ContSeq::new(seq))?;
-debug!("done: HlAttrDefine");
 	return Ok(UiEvent::HlAttrDefine(inner));
 },
 "hl_group_set" => {
-debug!("doing: HlGroupSet");
 	let inner = Vec::<HlGroupSet>::deserialize(ContSeq::new(seq))?;
-debug!("done: HlGroupSet");
 	return Ok(UiEvent::HlGroupSet(inner));
 },
 "grid_resize" => {
-debug!("doing: GridResize");
 	let inner = Vec::<GridResize>::deserialize(ContSeq::new(seq))?;
-debug!("done: GridResize");
 	return Ok(UiEvent::GridResize(inner));
 },
 "grid_clear" => {
-debug!("doing: GridClear");
 	let inner = Vec::<GridClear>::deserialize(ContSeq::new(seq))?;
-debug!("done: GridClear");
 	return Ok(UiEvent::GridClear(inner));
 },
 "grid_cursor_goto" => {
-debug!("doing: GridCursorGoto");
 	let inner = Vec::<GridCursorGoto>::deserialize(ContSeq::new(seq))?;
-debug!("done: GridCursorGoto");
 	return Ok(UiEvent::GridCursorGoto(inner));
 },
 "grid_line" => {
-debug!("doing: GridLine");
 	let inner = Vec::<GridLine>::deserialize(ContSeq::new(seq))?;
-debug!("done: GridLine");
 	return Ok(UiEvent::GridLine(inner));
 },
 "grid_scroll" => {
-debug!("doing: GridScroll");
 	let inner = Vec::<GridScroll>::deserialize(ContSeq::new(seq))?;
-debug!("done: GridScroll");
 	return Ok(UiEvent::GridScroll(inner));
 },
 "grid_destroy" => {
-debug!("doing: GridDestroy");
 	let inner = Vec::<GridDestroy>::deserialize(ContSeq::new(seq))?;
-debug!("done: GridDestroy");
 	return Ok(UiEvent::GridDestroy(inner));
 },
 "win_pos" => {
-debug!("doing: WinPos");
 	let inner = Vec::<WinPos>::deserialize(ContSeq::new(seq))?;
-debug!("done: WinPos");
 	return Ok(UiEvent::WinPos(inner));
 },
 "win_float_pos" => {
-debug!("doing: WinFloatPos");
 	let inner = Vec::<WinFloatPos>::deserialize(ContSeq::new(seq))?;
-debug!("done: WinFloatPos");
 	return Ok(UiEvent::WinFloatPos(inner));
 },
 "win_external_pos" => {
-debug!("doing: WinExternalPos");
 	let inner = Vec::<WinExternalPos>::deserialize(ContSeq::new(seq))?;
-debug!("done: WinExternalPos");
 	return Ok(UiEvent::WinExternalPos(inner));
 },
 "win_hide" => {
-debug!("doing: WinHide");
 	let inner = Vec::<WinHide>::deserialize(ContSeq::new(seq))?;
-debug!("done: WinHide");
 	return Ok(UiEvent::WinHide(inner));
 },
 "win_close" => {
-debug!("doing: WinClose");
 	let inner = Vec::<WinClose>::deserialize(ContSeq::new(seq))?;
-debug!("done: WinClose");
 	return Ok(UiEvent::WinClose(inner));
 },
 "msg_set_pos" => {
-debug!("doing: MsgSetPos");
 	let inner = Vec::<MsgSetPos>::deserialize(ContSeq::new(seq))?;
-debug!("done: MsgSetPos");
 	return Ok(UiEvent::MsgSetPos(inner));
 },
 "win_viewport" => {
-debug!("doing: WinViewport");
 	let inner = Vec::<WinViewport>::deserialize(ContSeq::new(seq))?;
-debug!("done: WinViewport");
 	return Ok(UiEvent::WinViewport(inner));
 },
 "win_viewport_margins" => {
-debug!("doing: WinViewportMargins");
 	let inner = Vec::<WinViewportMargins>::deserialize(ContSeq::new(seq))?;
-debug!("done: WinViewportMargins");
 	return Ok(UiEvent::WinViewportMargins(inner));
 },
 "win_extmark" => {
-debug!("doing: WinExtmark");
 	let inner = Vec::<WinExtmark>::deserialize(ContSeq::new(seq))?;
-debug!("done: WinExtmark");
 	return Ok(UiEvent::WinExtmark(inner));
 },
 "popupmenu_show" => {
-debug!("doing: PopupmenuShow");
 	let inner = Vec::<PopupmenuShow>::deserialize(ContSeq::new(seq))?;
-debug!("done: PopupmenuShow");
 	return Ok(UiEvent::PopupmenuShow(inner));
 },
 "popupmenu_hide" => {
-debug!("doing: PopupmenuHide");
 	let inner = Vec::<PopupmenuHide>::deserialize(ContSeq::new(seq))?;
-debug!("done: PopupmenuHide");
 	return Ok(UiEvent::PopupmenuHide(inner));
 },
 "popupmenu_select" => {
-debug!("doing: PopupmenuSelect");
 	let inner = Vec::<PopupmenuSelect>::deserialize(ContSeq::new(seq))?;
-debug!("done: PopupmenuSelect");
 	return Ok(UiEvent::PopupmenuSelect(inner));
 },
 "tabline_update" => {
-debug!("doing: TablineUpdate");
 	let inner = Vec::<TablineUpdate>::deserialize(ContSeq::new(seq))?;
-debug!("done: TablineUpdate");
 	return Ok(UiEvent::TablineUpdate(inner));
 },
 "cmdline_show" => {
-debug!("doing: CmdlineShow");
 	let inner = Vec::<CmdlineShow>::deserialize(ContSeq::new(seq))?;
-debug!("done: CmdlineShow");
 	return Ok(UiEvent::CmdlineShow(inner));
 },
 "cmdline_pos" => {
-debug!("doing: CmdlinePos");
 	let inner = Vec::<CmdlinePos>::deserialize(ContSeq::new(seq))?;
-debug!("done: CmdlinePos");
 	return Ok(UiEvent::CmdlinePos(inner));
 },
 "cmdline_special_char" => {
-debug!("doing: CmdlineSpecialChar");
 	let inner = Vec::<CmdlineSpecialChar>::deserialize(ContSeq::new(seq))?;
-debug!("done: CmdlineSpecialChar");
 	return Ok(UiEvent::CmdlineSpecialChar(inner));
 },
 "cmdline_hide" => {
-debug!("doing: CmdlineHide");
 	let inner = Vec::<CmdlineHide>::deserialize(ContSeq::new(seq))?;
-debug!("done: CmdlineHide");
 	return Ok(UiEvent::CmdlineHide(inner));
 },
 "cmdline_block_show" => {
-debug!("doing: CmdlineBlockShow");
 	let inner = Vec::<CmdlineBlockShow>::deserialize(ContSeq::new(seq))?;
-debug!("done: CmdlineBlockShow");
 	return Ok(UiEvent::CmdlineBlockShow(inner));
 },
 "cmdline_block_append" => {
-debug!("doing: CmdlineBlockAppend");
 	let inner = Vec::<CmdlineBlockAppend>::deserialize(ContSeq::new(seq))?;
-debug!("done: CmdlineBlockAppend");
 	return Ok(UiEvent::CmdlineBlockAppend(inner));
 },
 "cmdline_block_hide" => {
-debug!("doing: CmdlineBlockHide");
 	let inner = Vec::<CmdlineBlockHide>::deserialize(ContSeq::new(seq))?;
-debug!("done: CmdlineBlockHide");
 	return Ok(UiEvent::CmdlineBlockHide(inner));
 },
 "wildmenu_show" => {
-debug!("doing: WildmenuShow");
 	let inner = Vec::<WildmenuShow>::deserialize(ContSeq::new(seq))?;
-debug!("done: WildmenuShow");
 	return Ok(UiEvent::WildmenuShow(inner));
 },
 "wildmenu_select" => {
-debug!("doing: WildmenuSelect");
 	let inner = Vec::<WildmenuSelect>::deserialize(ContSeq::new(seq))?;
-debug!("done: WildmenuSelect");
 	return Ok(UiEvent::WildmenuSelect(inner));
 },
 "wildmenu_hide" => {
-debug!("doing: WildmenuHide");
 	let inner = Vec::<WildmenuHide>::deserialize(ContSeq::new(seq))?;
-debug!("done: WildmenuHide");
 	return Ok(UiEvent::WildmenuHide(inner));
 },
 "msg_show" => {
-debug!("doing: MsgShow");
 	let inner = Vec::<MsgShow>::deserialize(ContSeq::new(seq))?;
-debug!("done: MsgShow");
 	return Ok(UiEvent::MsgShow(inner));
 },
 "msg_clear" => {
-debug!("doing: MsgClear");
 	let inner = Vec::<MsgClear>::deserialize(ContSeq::new(seq))?;
-debug!("done: MsgClear");
 	return Ok(UiEvent::MsgClear(inner));
 },
 "msg_showcmd" => {
-debug!("doing: MsgShowcmd");
 	let inner = Vec::<MsgShowcmd>::deserialize(ContSeq::new(seq))?;
-debug!("done: MsgShowcmd");
 	return Ok(UiEvent::MsgShowcmd(inner));
 },
 "msg_showmode" => {
-debug!("doing: MsgShowmode");
 	let inner = Vec::<MsgShowmode>::deserialize(ContSeq::new(seq))?;
-debug!("done: MsgShowmode");
 	return Ok(UiEvent::MsgShowmode(inner));
 },
 "msg_ruler" => {
-debug!("doing: MsgRuler");
 	let inner = Vec::<MsgRuler>::deserialize(ContSeq::new(seq))?;
-debug!("done: MsgRuler");
 	return Ok(UiEvent::MsgRuler(inner));
 },
 "msg_history_show" => {
-debug!("doing: MsgHistoryShow");
 	let inner = Vec::<MsgHistoryShow>::deserialize(ContSeq::new(seq))?;
-debug!("done: MsgHistoryShow");
 	return Ok(UiEvent::MsgHistoryShow(inner));
 },
 "msg_history_clear" => {
-debug!("doing: MsgHistoryClear");
 	let inner = Vec::<MsgHistoryClear>::deserialize(ContSeq::new(seq))?;
-debug!("done: MsgHistoryClear");
 	return Ok(UiEvent::MsgHistoryClear(inner));
 },
 "error_exit" => {
-debug!("doing: ErrorExit");
 	let inner = Vec::<ErrorExit>::deserialize(ContSeq::new(seq))?;
-debug!("done: ErrorExit");
 	return Ok(UiEvent::ErrorExit(inner));
 },
 
         o => {
             let inner = Value::deserialize(ContSeq::new(seq))?;
-            return Ok(UiEvent::Unknown(o.to_string() ,inner));
+            return Ok(UiEvent::Unknown(Box::new((o.to_string(), inner))));
         }
     
 }

@@ -20,7 +20,6 @@ impl<'de> Deserialize<'de> for Message {
     where
         D: serde::Deserializer<'de>
     {
-        debug!("got here");
         return deserializer.deserialize_seq(MVisitor);
 
 
@@ -37,11 +36,9 @@ impl<'de> Deserialize<'de> for Message {
             where
                 A: serde::de::SeqAccess<'de>,
             {
-                debug!("mvisitor");
                 use serde::de::Error as DError;
                 let msg = "missing item. expecting 2 elements.";
                 let Some(type_) = seq.next_element::<u8>()? else {return Err(DError::custom(msg))};
-                debug!("type is: {type_}");
                 match type_ {
                     NOTIFICATION_CODE => {
                         let inner = Notify::deserialize(ContSeq::new(seq))?;

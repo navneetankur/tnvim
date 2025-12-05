@@ -9,11 +9,5 @@ fn main() {
         // .format_timestamp(Some(env_logger::TimestampPrecision::Seconds))
         .format_timestamp(None)
         .init();
-    if let Some(arg) = args.next() {
-        if arg == "-g" {
-            nvimapisys::build::main();
-        }
-    } else {
-        nvimapisys::main();
-    }
+        nvimapi::main();
 }

@@ -1,5 +1,6 @@
+#![feature(trim_prefix_suffix)]
 use core::ops::ControlFlow;
-use std::io::Write;
+use std::{fs::File, io::{Write, stdout}};
 
 use rmpv::Value;
 
@@ -7,28 +8,27 @@ const VALUE_SUFFIX: &str = "_wv";
 const API_DOC_FILE: &str = "/usr/share/nvim/runtime/doc/api.txt";
 
 pub fn main() {
-    let data = include_bytes!("nvimapi.msgpack");
-    let v = rmpv::decode::read_value(&mut data.as_slice()).unwrap();
+    let mut api_file = File::open("nvimapi.msgpack").unwrap();
+    let v = rmpv::decode::read_value(&mut api_file).unwrap();
+    drop(api_file);
     let root = Vec::try_from(v).unwrap();
-    println!("{HEADER}");
+    let mut w = File::create("src/generated.rs").unwrap();
+    writeln!(w, "{HEADER}").unwrap();
     for (key, value) in root {
         if key.as_str().unwrap() == "functions" {
-            println!("impl Nvimapi {{");
-            handle_functions(value);
-            println!("}}");
+            writeln!(w, "impl Nvimapi {{").unwrap();
+            handle_functions(&mut w, value);
+            writeln!(w, "}}").unwrap();
         } else if key.as_str().unwrap() == "ui_events" {
-            let mut buffer = Vec::new();
-            handle_ui_events(&value, &mut buffer);
-            std::io::stdout().write_all(&buffer).unwrap();
+            handle_ui_events(&mut w, &value,);
         } else if key.as_str().unwrap() == "ui_options" {
-            let mut buffer = Vec::new();
-            handle_ui_options(&value, &mut buffer);
-            std::io::stdout().write_all(&buffer).unwrap();
+            handle_ui_options(&mut w, &value,);
         }
     }
+    drop(w);
 }
 
-fn handle_ui_options(value: &Value, w: &mut Vec<u8>) {
+fn handle_ui_options(w: &mut impl Write, value: &Value,) {
     let options = value.as_array().unwrap();
     writeln!(w, "#[derive(serde::Serialize, Debug)]").unwrap();
     writeln!(w, r##"#[serde(rename_all = "snake_case")]"##).unwrap();
@@ -41,7 +41,7 @@ fn handle_ui_options(value: &Value, w: &mut Vec<u8>) {
     writeln!(w, "}}").unwrap();
 }
 
-fn handle_ui_events(value: &Value, w: &mut impl Write) {
+fn handle_ui_events(w: &mut impl Write, value: &Value,) {
     let events = value.as_array().unwrap();
     let mut event_names = Vec::with_capacity(events.len());
     let mut event_snake_names = Vec::with_capacity(events.len());
@@ -69,7 +69,7 @@ fn handle_ui_events(value: &Value, w: &mut impl Write) {
     for name in &event_names {
         writeln!(w, "\t{name}(Vec<{name}>),").unwrap();
     }
-    writeln!(w, "\tUnknown(String, Value),").unwrap();
+    writeln!(w, "\tUnknown(Box<(String, Value)>),").unwrap();
     writeln!(w, "}}",).unwrap();
     deserilize_for_ui_event_enum(w, &event_snake_names, &event_names);
 }
@@ -82,9 +82,9 @@ fn deserilize_for_ui_event_enum(w: &mut impl Write, snakes: &[&str], pascals: &[
         // writeln!(w, "\tlet Some(inner) = seq.next_element()? else {{").unwrap();
         // writeln!(w, "\t\treturn Err(DError::custom(msg));").unwrap();
         // writeln!(w, "}};").unwrap();
-        writeln!(w, "debug!(\"doing: {pascal}\");").unwrap();
+        // writeln!(w, "debug!(\"doing: {pascal}\");").unwrap();
         writeln!(w, "\tlet inner = Vec::<{pascal}>::deserialize(ContSeq::new(seq))?;").unwrap();
-        writeln!(w, "debug!(\"done: {pascal}\");").unwrap();
+        // writeln!(w, "debug!(\"done: {pascal}\");").unwrap();
 
         writeln!(w, "\treturn Ok(UiEvent::{pascal}(inner));").unwrap();
         writeln!(w, "}},").unwrap();
@@ -92,7 +92,7 @@ fn deserilize_for_ui_event_enum(w: &mut impl Write, snakes: &[&str], pascals: &[
     let other_part: &str = r#"
         o => {
             let inner = Value::deserialize(ContSeq::new(seq))?;
-            return Ok(UiEvent::Unknown(o.to_string() ,inner));
+            return Ok(UiEvent::Unknown(Box::new((o.to_string(), inner))));
         }
     "#;
     writeln!(w, "{other_part}").unwrap();
@@ -150,6 +150,7 @@ fn snake_to_pascal(snake: &str) -> String {
 }
 
 const HEADER: &str = r###"
+use crate::nvimapi::{TABPAGE_ID, WINDOW_ID, BUFFER_ID};
 use log::debug;
 use serde::Deserializer;
 use crate::contseq::ContSeq;
@@ -163,11 +164,14 @@ type Boolean = bool;
 type Integer = i64;
 type Float = f64  ;
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Buffer(pub Integer);
+#[serde(transparent)]
+pub struct Buffer(pub Value);
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Window(pub Integer);
+#[serde(transparent)]
+pub struct Window(pub Value);
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Tabpage(pub Integer);
+#[serde(transparent)]
+pub struct Tabpage(pub Value);
 type Array  = Vec<Value>;
 type Dict   = Pairs<Value,Value>;
 type Object = Value;
@@ -221,7 +225,7 @@ impl TryFromValue for Tabpage {
 }
 "###;
 
-fn handle_functions(value: Value) {
+fn handle_functions(w: &mut impl Write, value: Value) {
     let functions = Vec::<Value>::try_from(value).unwrap();
     let mut buffer = Default::default();
     let ignored_types = ["LuaRef",];
@@ -232,16 +236,15 @@ fn handle_functions(value: Value) {
         if let ControlFlow::Break(_) = handle_fun(&mut buffer, &ignored_types, &fun, false, &api_doc) {
             continue 'outer;
         }
-        println!("{buffer}");
+        writeln!(w, "{buffer}").unwrap();
         if buffer.contains("Serialize") || buffer.contains("Deserialize") {
             let vf = handle_fun(&mut buffer, &ignored_types, &fun, true, &api_doc);
             assert!(matches!(vf, ControlFlow::Continue(_)), "if it was fine with serde it should be fine with value.");
-            println!("{buffer}");
+            writeln!(w, "{buffer}").unwrap();
         }
     }
 }
 
-// todo, replace return of impl Deserialize<'static> to D wher D: Deserialize<'static>;
 fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_value: bool, api_doc: &[&str],) -> ControlFlow<()> {
     buffer.clear();
     let deprecated = value_get(&fun, "deprecated_since");

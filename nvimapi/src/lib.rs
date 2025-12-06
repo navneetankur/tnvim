@@ -19,11 +19,12 @@ mod manager;
 mod readloop;
 mod msgrpc;
 mod valueseq;
-pub use nvimapi::Nvimapi;
+pub use nvimapi::Nvimrpc;
 pub mod error;
 pub use nvimapi::TryFromValue;
 
 use crate::handler::Handler;
+use crate::nvimapi::Nvimapi;
 
 const SERVER_PATH: &str = "/run/user/1000/nvim-server.s";
 pub fn main() {
@@ -54,8 +55,7 @@ struct PendingRequest {
 
 struct TestH;
 impl Handler for TestH {
-    type Write = UnixStream;
-    async fn notify(&self, nvim: &Nvimapi<Self::Write>, notification: nvimapi::notification::Notification) {
+    async fn notify(&self, nvim: &impl Nvimapi, notification: nvimapi::notification::Notification) {
         match notification {
             nvimapi::notification::Notification::Redraw(ui_events) => {
                 for event in ui_events {
@@ -66,11 +66,11 @@ impl Handler for TestH {
         }
     }
 
-    async fn request(&self, nvim: &Nvimapi<Self::Write>, request: Box<msgrpc::Request>) {
+    async fn request(&self, nvim: &impl Nvimapi, request: Box<msgrpc::Request>) {
         println!("request: {request:?}");
     }
 
-    async fn init(&self, nvim: &Nvimapi<Self::Write>) {
+    async fn init(&self, nvim: &impl Nvimapi) {
         nvim.ui_attach(64, 64, [();0]).await.unwrap();
         debug!("attached");
         let w = nvim.strwidth("hillo").await.unwrap();

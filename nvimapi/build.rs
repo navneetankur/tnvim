@@ -17,7 +17,7 @@ pub fn main() {
     writeln!(w, "{HEADER}").unwrap();
     for (key, value) in root {
         if key.as_str().unwrap() == "functions" {
-            writeln!(w, "impl<W: std::io::Write> Nvimapi<W> {{").unwrap();
+            w.write_all(NVIMAPI_DECL.as_bytes()).unwrap();
             handle_functions(&mut w, value);
             writeln!(w, "}}").unwrap();
         } else if key.as_str().unwrap() == "ui_events" {
@@ -27,6 +27,19 @@ pub fn main() {
         }
     }
     drop(w);
+
+    const NVIMAPI_DECL: &str = r###"
+    pub trait Nvimapi {
+        fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()>;
+        fn send_response(&self, msgid: i32, error: impl serde::Serialize, result: impl serde::Serialize) -> error::Result<()>;
+        async fn call_fn_wv<R>(&self, fn_name: String, args: impl crate::valueseq::ValueSeq) -> error::Result<R>
+        where 
+            R: TryFromValue;
+        async fn call_fn<D,S>(&self, fn_name: &str, args: S) -> error::Result<D>
+        where 
+            D: Deserialize<'static>,
+            S: crate::valueseq::SerialSeq;
+    "###;
 }
 
 fn handle_ui_options(w: &mut impl Write, value: &Value,) {
@@ -171,7 +184,6 @@ use log::debug;
 use serde::Deserializer;
 use crate::contseq::ContSeq;
 use crate::TryFromValue;
-use crate::Nvimapi;
 use rmpv::Value;
 use crate::Pairs;
 use crate::error;
@@ -270,8 +282,7 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
     let fn_name = value_get(&fun, "name").unwrap().as_str().unwrap();
     let doc = get_doc_for_fn(fn_name, api_doc);
     buffer.push_str(&doc);
-    buffer.push_str("pub async ");
-    buffer.push_str("fn ");
+    buffer.push_str("async fn ");
     buffer.push_str(fn_name.trim_prefix("nvim_"));
     if use_value {
         buffer.push_str(VALUE_SUFFIX);

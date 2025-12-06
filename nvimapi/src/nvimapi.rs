@@ -1,4 +1,5 @@
 use crate::{MsgToReader, handler::Handler, msgrpc::{self, RESPONSE_CODE, Request}, nvimapi::notification::Notification, valueseq};
+pub use crate::generated::Nvimapi;
 use core::{cell::{Cell, RefCell}, ops::DerefMut};
 use std::{io::Write, os::unix::net::UnixStream};
 use rmpv::Value;
@@ -12,9 +13,7 @@ pub const WINDOW_ID:  i8 = 1;
 pub const TABPAGE_ID: i8 = 2;
 // will keep a writer to encode with.
 // it will send its message(request) id to main loop.
-// and a channel rx. Where it will get redraw, request or notify messages.
-// then it will call appropriate handler method.
-pub struct Nvimapi<W: Write>
+pub struct Nvimrpc<W: Write>
 {
     pub(crate) tx_to_reader: mpsc::Sender<MsgToReader>,
     pub(crate) msgid: Cell<u32>,
@@ -29,9 +28,9 @@ pub struct Nvimapi<W: Write>
 //     }
 //     return Ok(());
 // }
-impl<W: Write> Nvimapi<W>
+impl<W: Write> Nvimapi for Nvimrpc<W>
 {
-    pub fn send_response(&self, msgid: i32, error: impl serde::Serialize, result: impl serde::Serialize) -> error::Result<()> {
+    fn send_response(&self, msgid: i32, error: impl serde::Serialize, result: impl serde::Serialize) -> error::Result<()> {
         let mut w = self.write.borrow_mut();
         rmp_serde::encode::write_named(w.deref_mut(), &(
             RESPONSE_CODE,
@@ -42,7 +41,7 @@ impl<W: Write> Nvimapi<W>
         drop(w);
         return Ok(());
     }
-    pub fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()> {
+    fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()> {
         let mut w = self.write.borrow_mut();
         rmpv::encode::write_value(w.deref_mut(), &Value::Array(vec![
             Value::from(RESPONSE_CODE),
@@ -53,7 +52,7 @@ impl<W: Write> Nvimapi<W>
         drop(w);
         return Ok(());
     }
-    pub async fn call_fn_wv<R>(&self, fn_name: String, args: impl ValueSeq) -> error::Result<R>
+    async fn call_fn_wv<R>(&self, fn_name: String, args: impl ValueSeq) -> error::Result<R>
     where 
         R: TryFromValue
     {
@@ -70,7 +69,7 @@ impl<W: Write> Nvimapi<W>
         return R::try_from_value(rv);
     }
 
-    pub async fn call_fn<D,S>(&self, fn_name: &str, args: S) -> error::Result<D>
+    async fn call_fn<D,S>(&self, fn_name: &str, args: S) -> error::Result<D>
     where 
         D: Deserialize<'static>,
         S: SerialSeq,
@@ -87,12 +86,13 @@ impl<W: Write> Nvimapi<W>
         let rv = rx.await??;
         return Ok(D::deserialize(rv)?);
     }
+}
+impl<W: Write> Nvimrpc<W> {
     fn get_next_msg_id(&self) -> u32 {
         let msg_id = self.msgid.get();
         self.msgid.update(|m| m+1);
         return msg_id;
     }
-
 }
 pub trait TryFromValue {
     fn try_from_value(value: Value) -> error::Result<Self> where Self: Sized;

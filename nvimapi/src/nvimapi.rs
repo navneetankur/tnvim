@@ -100,11 +100,23 @@ impl<W: Write> NvimapiNr for Nvimrpc<W> {
         fn_name: String,
         args: impl crate::valueseq::ValueSeq,
     ) -> error::Result<()> {
-        todo!()
+        let msg_id = self.get_next_msg_id();
+        let request = msgrpc::create_request_value(msg_id, fn_name, args);
+        let mut w = self.write.borrow_mut();
+        // socket buffer is around 200 kb in linux, so it shouldn't block due to full.
+        rmpv::encode::write_value(w.deref_mut(), &request)?;
+        drop(w);
+        return Ok(());
     }
 
     fn call_fn(&self, fn_name: &str, args: impl crate::valueseq::SerialSeq) -> error::Result<()> {
-        todo!()
+        let msg_id = self.get_next_msg_id();
+        let request = msgrpc::create_request_ser(msg_id, fn_name, args);
+        let mut w = self.write.borrow_mut();
+        // socket buffer is around 200 kb in linux, so it shouldn't block due to full.
+        rmp_serde::encode::write_named(w.deref_mut(), &request)?;
+        drop(w);
+        return Ok(());
     }
 }
 

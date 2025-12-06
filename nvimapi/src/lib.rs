@@ -75,15 +75,19 @@ impl Handler for TestH {
     }
 
     async fn init(&self, nvim: &impl Nvimapi) {
+        use nvimapi::NvimapiNr;
         // nvim.ui_attach(64, 64, [();0]).await.unwrap();
-        // nvim.ui_attach(64, 64, Pairs::new().with("rgb", true)).await.unwrap();
-        let atach = nvim.ui_attach(64, 64, Pairs::new().with("rgb", true));
-        let pa = Box::pin(atach);
-        PollOnce{inner: pa}.await;
+        nvim.noret().ui_attach(64, 64, Pairs::new().with("rgb", true)).unwrap();
+        // let atach = nvim.ui_attach(64, 64, Pairs::new().with("rgb", true));
+        // let atach = nvim.ui_attach(64, 64, Pairs::new().with("rgb", true));
+        // let pa = Box::pin(atach);
+        // PollOnce{inner: pa}.await;
         // nvim.ui_attach(64, 64, Pairs::new().with("rgb", 42)).await.unwrap();
         debug!("attached");
         // let w: Value = nvim.call_fn_wv("nvim_strwidth".into(), "fsajll".into()).await.unwrap();
-        let w = nvim.strwidth("hello").await.unwrap();
+        let w = nvim.noret().strwidth("hello").unwrap();
+        let w = nvim.noret().strwidth("hello").unwrap();
+        let w = nvim.strwidth("hellooooooo").await.unwrap();
         debug!("w: {w}");
     }
 }

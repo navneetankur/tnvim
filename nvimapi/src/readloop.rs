@@ -27,7 +27,7 @@ pub fn readloop<R: Read>(
                         rx.try_recv().unwrap().pending_request()
                     };
                 if msgid != corres_request.msg_id {
-                    debug!("response for {msgid}, with no receiver");
+                    debug!("response for msgid: {msgid}, with no receiver");
                     unprocessed_request = Some(corres_request);
                 }
                 else if let Err(_) = corres_request.sender.send(response.result) {

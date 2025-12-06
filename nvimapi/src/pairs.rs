@@ -19,6 +19,17 @@ impl<K, V> Pairs<K, V> {
             inner: Vec::with_capacity(capacity),
         }
     }
+    pub fn new() -> Self {
+        Self {
+            inner: Vec::new(),
+        }
+    }
+}
+impl<K, V> Pairs<K, V> {
+    pub fn with(mut self, key: K, value: V) -> Self {
+        self.push((key, value));
+        return self;
+    }
 }
 impl<K, V> Pairs<K, V>
 where 

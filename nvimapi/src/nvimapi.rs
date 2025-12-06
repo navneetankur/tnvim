@@ -64,6 +64,7 @@ impl<W: Write> Nvimapi for Nvimrpc<W>
         // reply from nvim, but does not have received the corres_request yet.
         self.tx_to_reader.send(msg).await.unwrap();
         let mut w = self.write.borrow_mut();
+        // socket buffer is around 200 kb in linux, so it shouldn't block due to full.
         rmpv::encode::write_value(w.deref_mut(), &request)?;
         drop(w);
         let rv = rx.await??;
@@ -83,6 +84,7 @@ impl<W: Write> Nvimapi for Nvimrpc<W>
         // reply from nvim, but does not have received the corres_request yet.
         self.tx_to_reader.send(msg).await.unwrap();
         let mut w = self.write.borrow_mut();
+        // socket buffer is around 200 kb in linux, so it shouldn't block due to full.
         rmp_serde::encode::write_named(w.deref_mut(), &request)?;
         drop(w);
         let rv = rx.await??;

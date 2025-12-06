@@ -1,6 +1,6 @@
 use core::ops::ControlFlow;
 use std::{collections::VecDeque, io::Read};
-use log::warn;
+use log::{debug, warn};
 use tokio::sync::mpsc;
 use crate::{MsgToReader, PendingRequest, handler::MsgForHandler, msgrpc::Message};
 
@@ -10,6 +10,7 @@ pub fn readloop<R: Read>(
     mut rx: mpsc::Receiver<MsgToReader>,
     tx: mpsc::Sender<MsgForHandler>,
 ) {
+    let mut unprocessed_request = Option::<PendingRequest>::None;
     'outer: loop {
         let message: Message = rmp_serde::decode::from_read(&mut reader).unwrap();
         match message {
@@ -19,10 +20,19 @@ pub fn readloop<R: Read>(
             },
             Message::Response(response) => {
                 let msgid = response.msgid;
-                let corres_request = rx.try_recv().unwrap();
-                let MsgToReader::PendingRequest(corres_request) = corres_request else {unimplemented!()};
-                assert_eq!(msgid, corres_request.msg_id, "is response coming out of order. Should i check whole queue?");
-                corres_request.sender.send(response.result).unwrap();
+                let corres_request = 
+                    if let Some(unprocessed_request) = unprocessed_request.take() {
+                        unprocessed_request
+                    } else {
+                        rx.try_recv().unwrap().pending_request()
+                    };
+                if msgid != corres_request.msg_id {
+                    debug!("response for {msgid}, with no receiver");
+                    unprocessed_request = Some(corres_request);
+                }
+                else if let Err(_) = corres_request.sender.send(response.result) {
+                    warn!("return value channel dropped for msg id: {}", corres_request.msg_id);
+                }
             },
             Message::Notification(notify) => {
                 if let Err(e) = tx.try_send(MsgForHandler::Notification(notify)) {

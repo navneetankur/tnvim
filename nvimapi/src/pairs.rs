@@ -7,7 +7,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use crate::{error, TryFromValue};
 
 /// a vec of tuple of elements,
-/// pretending to be map for serilization purpose.
+/// pretending to be a map for serilization purpose.
+/// Will NOT avoid duplicates.
 #[derive(Default, Debug)]
 pub struct Pairs<K = Value, V = K> {
     inner: Vec<(K, V)>,
@@ -82,6 +83,11 @@ where
     where
         D: Deserializer<'de>,
     {
+        let visitor = MapVisitor {
+            marker: PhantomData,
+        };
+        return deserializer.deserialize_map(visitor);
+
         struct MapVisitor<K, V> {
             marker: PhantomData<Pairs<K, V>>,
         }
@@ -109,27 +115,22 @@ where
                 Ok(values)
             }
         }
-
-        let visitor = MapVisitor {
-            marker: PhantomData,
-        };
-        deserializer.deserialize_map(visitor)
     }
 }
 
 impl<K, V> Serialize for Pairs<K, V>
-        where
-            K: Serialize,
-            V: Serialize,
-        {
-            #[inline]
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                serializer.collect_map(self.iter().map(|(k,v)|(k,v)))
-            }
-        }
+where
+    K: Serialize,
+    V: Serialize,
+{
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_map(self.iter().map(|(k,v)|(k,v)))
+    }
+}
 impl<K,V> IntoIterator for Pairs<K,V> {
     type Item = (K,V);
 

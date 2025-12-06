@@ -60,7 +60,7 @@ impl Error {
             if let Some(inner) = inner {
                 Some(Box::new(inner))
             } else {None};
-        Self { msg: msg.into(), inner: inner, inner_value: inner_value.map(Box::new) }
+        Self { msg: msg.into(), inner, inner_value: inner_value.map(Box::new) }
     }
 
     pub fn from_inner(inner: impl core::error::Error + 'static) -> Self {

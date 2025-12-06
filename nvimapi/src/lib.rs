@@ -7,9 +7,6 @@ mod pairs;
 use log::debug;
 pub use pairs::Pairs;
 use tokio::runtime::LocalRuntime;
-use core::ops::ControlFlow;
-use std::io::{Write, stdout};
-use std::os::unix::net::UnixStream;
 use std::rc::Rc;
 use rmpv::Value;
 mod generated;
@@ -55,7 +52,7 @@ struct PendingRequest {
 
 struct TestH;
 impl Handler for TestH {
-    async fn notify(&self, nvim: &impl Nvimapi, notification: nvimapi::notification::Notification) {
+    async fn notify(&self, _nvim: &impl Nvimapi, notification: nvimapi::notification::Notification) {
         match notification {
             nvimapi::notification::Notification::Redraw(ui_events) => {
                 for event in ui_events {
@@ -66,7 +63,7 @@ impl Handler for TestH {
         }
     }
 
-    async fn request(&self, nvim: &impl Nvimapi, request: Box<msgrpc::Request>) {
+    async fn request(&self, _nvim: &impl Nvimapi, request: Box<msgrpc::Request>) {
         println!("request: {request:?}");
     }
 

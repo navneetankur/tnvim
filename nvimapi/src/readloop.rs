@@ -1,6 +1,6 @@
 use core::ops::ControlFlow;
-use std::{collections::VecDeque, io::Read, os::unix::net::UnixStream};
-use log::{debug, warn};
+use std::{collections::VecDeque, io::Read};
+use log::warn;
 use tokio::sync::mpsc;
 use crate::{MsgToReader, PendingRequest, handler::MsgForHandler, msgrpc::Message};
 

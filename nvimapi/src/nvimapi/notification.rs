@@ -1,4 +1,3 @@
-use log::debug;
 use rmpv::Value;
 use serde::Deserialize;
 

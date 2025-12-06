@@ -1,6 +1,6 @@
 #![feature(trim_prefix_suffix)]
 use core::ops::ControlFlow;
-use std::{fs::File, io::{Write, stdout}};
+use std::{fs::File, io::Write};
 
 use rmpv::Value;
 
@@ -275,11 +275,11 @@ fn handle_functions(w: &mut impl Write, value: Value) {
 
 fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_value: bool, api_doc: &[&str],) -> ControlFlow<()> {
     buffer.clear();
-    let deprecated = value_get(&fun, "deprecated_since");
+    let deprecated = value_get(fun, "deprecated_since");
     if deprecated.is_some() {
         return ControlFlow::Break(());
     }
-    let fn_name = value_get(&fun, "name").unwrap().as_str().unwrap();
+    let fn_name = value_get(fun, "name").unwrap().as_str().unwrap();
     let doc = get_doc_for_fn(fn_name, api_doc);
     buffer.push_str(&doc);
     buffer.push_str("async fn ");
@@ -289,7 +289,7 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
     }
     let generic_template_position = buffer.len();
     buffer.push_str("(&self, ");
-    let params = value_get(&fun, "parameters").unwrap().as_array().unwrap();
+    let params = value_get(fun, "parameters").unwrap().as_array().unwrap();
     let mut pnames = Vec::with_capacity(params.len());
     for param in params {
         let param = param.as_array().unwrap();
@@ -309,7 +309,7 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
         buffer.push_str(p_type);
         buffer.push_str(", ");
     }
-    let ret_type = value_get(&fun, "return_type").unwrap().as_str().unwrap();
+    let ret_type = value_get(fun, "return_type").unwrap().as_str().unwrap();
     let ret_type = if use_value {return_type_to_value(ret_type)}
         else {
             let ret_type = return_type_to_serde(ret_type);
@@ -328,10 +328,10 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
     buffer.push_str(") -> ");
     buffer.push_str("error::Result<");
     buffer.push_str(ret_type);
-    buffer.push_str(">");
+    buffer.push('>');
     buffer.push_str(" {\n");
     {// inside of fn, just call the call_fn with  tuple as arg.
-        buffer.push_str("\t"); // indentation, remove maybe
+        buffer.push('\t'); // indentation, remove maybe
         buffer.push_str("self.call_fn");
         if use_value { buffer.push_str(VALUE_SUFFIX); }
         buffer.push('(');
@@ -347,13 +347,13 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
                 buffer.push_str(pname);
                 buffer.push_str(", ");
             }
-            buffer.push_str(")");
+            buffer.push(')');
         }
-        buffer.push_str(")");
+        buffer.push(')');
         buffer.push_str(".await");
-        buffer.push_str("\n");
+        buffer.push('\n');
     }
-    buffer.push_str("}");
+    buffer.push('}');
     return ControlFlow::Continue(());
 }
 fn get_doc_for_fn(name: &str, api_doc: &[&str]) -> String {
@@ -366,13 +366,13 @@ fn get_doc_for_fn(name: &str, api_doc: &[&str]) -> String {
             if line.ends_with("*") { return rv; }
             rv.push_str("///");
             rv.push_str(line);
-            rv.push_str("\n");
+            rv.push('\n');
         }
         else if line.contains(&to_search) {
             write_it = true;
             rv.push_str("///");
             rv.push_str(line);
-            rv.push_str("\n");
+            rv.push('\n');
         }
     }
     return rv;

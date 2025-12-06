@@ -24,4 +24,3 @@ pub fn create_request_ser<S: SerialSeq>(msg_id: u32, fn_name: &str, args: S)
 mod message;
 pub use message::Message;
 pub use message::Request;
-pub use message::Response;

@@ -1,12 +1,12 @@
-use crate::{MsgToReader, handler::Handler, msgrpc::{self, RESPONSE_CODE, Request}, nvimapi::notification::Notification, valueseq};
+use crate::{MsgToReader, msgrpc::{self, RESPONSE_CODE}, valueseq};
 pub use crate::generated::Nvimapi;
 use core::{cell::{Cell, RefCell}, ops::DerefMut};
-use std::{io::Write, os::unix::net::UnixStream};
+use std::io::Write;
 use rmpv::Value;
 use serde::Deserialize;
 use tokio::sync::{mpsc, oneshot};
 use crate::{error, nvimapi::valueseq::{SerialSeq, ValueSeq}};
-pub use crate::generated::{UiEvent, UiOptions};
+pub use crate::generated::UiEvent;
 pub mod notification;
 pub const BUFFER_ID:  i8 = 0;
 pub const WINDOW_ID:  i8 = 1;
@@ -58,13 +58,14 @@ impl<W: Write> Nvimapi for Nvimrpc<W>
     {
         let msg_id = self.get_next_msg_id();
         let request = msgrpc::create_request_value(msg_id, fn_name, args);
-        let mut w = self.write.borrow_mut();
         let (sender, rx) = oneshot::channel::<Result<Value,Value>>();
         let msg = MsgToReader::new(msg_id, sender);
         // this is sent to readloop first, to avoid the possibility that readloop receives the
         // reply from nvim, but does not have received the corres_request yet.
         self.tx_to_reader.send(msg).await.unwrap();
+        let mut w = self.write.borrow_mut();
         rmpv::encode::write_value(w.deref_mut(), &request)?;
+        drop(w);
         let rv = rx.await??;
         return R::try_from_value(rv);
     }
@@ -76,13 +77,14 @@ impl<W: Write> Nvimapi for Nvimrpc<W>
     {
         let msg_id = self.get_next_msg_id();
         let request = msgrpc::create_request_ser(msg_id, fn_name, args);
-        let mut w = self.write.borrow_mut();
         let (sender, rx) = oneshot::channel::<Result<Value, Value>>();
         let msg = MsgToReader::new(msg_id, sender);
         // this is sent to readloop first, to avoid the possibility that readloop receives the
         // reply from nvim, but does not have received the corres_request yet.
         self.tx_to_reader.send(msg).await.unwrap();
+        let mut w = self.write.borrow_mut();
         rmp_serde::encode::write_named(w.deref_mut(), &request)?;
+        drop(w);
         let rv = rx.await??;
         return Ok(D::deserialize(rv)?);
     }

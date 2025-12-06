@@ -1,6 +1,5 @@
-use std::{io::Write, os::unix::net::UnixStream};
 
-use crate::{Nvimrpc, msgrpc::Request, nvimapi::{Nvimapi, notification::Notification}};
+use crate::{msgrpc::Request, nvimapi::{Nvimapi, notification::Notification}};
 
 pub trait Handler {
     async fn notify(&self, nvim: &impl Nvimapi, notification: Notification);

@@ -1,5 +1,3 @@
-use log::debug;
-use rmpv::Value;
 use serde::Deserialize;
 mod request;
 pub use request::Request;

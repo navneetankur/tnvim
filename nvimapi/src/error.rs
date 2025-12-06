@@ -9,6 +9,7 @@ pub struct Error {
     pub inner: Option<Box<dyn core::error::Error>>,
     pub inner_value: Option<Box<Value>>,
 }
+
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if !self.msg.is_empty() {

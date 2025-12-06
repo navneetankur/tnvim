@@ -4,8 +4,7 @@ use serde::{Deserialize, de::Error as DError};
 #[derive(Debug)]
 pub struct Response {
     pub msgid: u32,
-    pub error: Value,
-    pub result: Value,
+    pub result: Result<Value, Value>,
 }
 
 impl<'de> Deserialize<'de> for Response {
@@ -38,14 +37,13 @@ impl<'de> Deserialize<'de> for Response {
                 let Some(result) = seq.next_element::<Value>()? else {
                     return Err(DError::custom(msg));
                 };
+                let result =
+                    if error.is_nil() {Ok(result)} else {Err(error)};
                 return Ok(Response {
                     msgid,
-                    error,
                     result,
                 });
             }
-
         }
-
     }
 }

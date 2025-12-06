@@ -112,3 +112,8 @@ impl From<rmpv::encode::Error> for Error {
         Error::from_inner(value)
     }
 }
+impl From<Value> for Error {
+    fn from(value: Value) -> Self {
+        Error::from_value(value)
+    }
+}

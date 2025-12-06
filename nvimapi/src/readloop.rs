@@ -22,11 +22,7 @@ pub fn readloop<R: Read>(
                 let corres_request = rx.try_recv().unwrap();
                 let MsgToReader::PendingRequest(corres_request) = corres_request else {unimplemented!()};
                 assert_eq!(msgid, corres_request.msg_id, "is response coming out of order. Should i check whole queue?");
-                if response.error.is_nil() {
-                    corres_request.sender.send(response.result).unwrap();
-                } else {
-                    corres_request.sender.send(response.error).unwrap();
-                }
+                corres_request.sender.send(response.result).unwrap();
             },
             Message::Notification(notify) => {
                 if let Err(e) = tx.try_send(MsgForHandler::Notification(notify)) {

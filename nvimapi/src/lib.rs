@@ -43,13 +43,13 @@ pub enum MsgToReader {
     Other,
 }
 impl MsgToReader {
-    pub fn new(msg_id: u32, sender: tokio::sync::oneshot::Sender<Value>) -> Self {
+    pub fn new(msg_id: u32, sender: tokio::sync::oneshot::Sender<Result<Value, Value>>) -> Self {
         Self::PendingRequest(PendingRequest { msg_id, sender })
     }
 }
 struct PendingRequest {
     msg_id: u32,
-    sender: tokio::sync::oneshot::Sender<Value>,
+    sender: tokio::sync::oneshot::Sender<core::result::Result<Value, Value>>,
 }
 
 struct TestH;

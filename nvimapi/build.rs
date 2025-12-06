@@ -18,8 +18,14 @@ pub fn main() {
     for (key, value) in root {
         if key.as_str().unwrap() == "functions" {
             w.write_all(NVIMAPI_DECL.as_bytes()).unwrap();
-            handle_functions(&mut w, value);
+            handle_functions(&mut w, &value, true);
             writeln!(w, "}}").unwrap();
+
+            w.write_all(NVIMAPI_NR.as_bytes()).unwrap();
+            handle_functions(&mut w, &value, false);
+            writeln!(w, "}}").unwrap();
+            
+
         } else if key.as_str().unwrap() == "ui_events" {
             handle_ui_events(&mut w, &value,);
         } else if key.as_str().unwrap() == "ui_options" {
@@ -27,9 +33,20 @@ pub fn main() {
         }
     }
     drop(w);
+    const NVIMAPI_NR: &str = r###"
+    pub trait NvimapiNr {
+        fn call_fn_wv(
+            &self,
+            fn_name: String,
+            args: impl crate::valueseq::ValueSeq,
+        ) -> error::Result<()>;
+
+        fn call_fn(&self, fn_name: &str, args: impl crate::valueseq::SerialSeq) -> error::Result<()>;
+    "###;
 
     const NVIMAPI_DECL: &str = r###"
     pub trait Nvimapi {
+        fn noret(&self) -> &impl NvimapiNr;
         fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()>;
         fn send_response(&self, msgid: i32, error: impl serde::Serialize, result: impl serde::Serialize) -> error::Result<()>;
         async fn call_fn_wv<R>(&self, fn_name: String, args: impl crate::valueseq::ValueSeq) -> error::Result<R>
@@ -253,36 +270,37 @@ impl TryFromValue for Tabpage {
 }
 "###;
 
-fn handle_functions(w: &mut impl Write, value: Value) {
-    let functions = Vec::<Value>::try_from(value).unwrap();
+fn handle_functions(w: &mut impl Write, value: &Value, with_ret: bool) {
+    let functions = value.as_array().unwrap();
     let mut buffer = Default::default();
     let ignored_types = ["LuaRef",];
-    // let generit_types = ["Array", "Dict", "Object"];
     let api_doc = std::fs::read_to_string(API_DOC_FILE).unwrap_or_default();
     let api_doc: Vec<&str> = api_doc.split("\n").collect();
     'outer: for fun in functions {
-        if let ControlFlow::Break(_) = handle_fun(&mut buffer, &ignored_types, &fun, false, &api_doc) {
+        if let ControlFlow::Break(_) = handle_fun(&mut buffer, &ignored_types, &fun, false, with_ret, &api_doc) {
             continue 'outer;
         }
-        writeln!(w, "{buffer}").unwrap();
+        w.write_all(buffer.as_bytes()).unwrap();
         if buffer.contains("Serialize") || buffer.contains("Deserialize") {
-            let vf = handle_fun(&mut buffer, &ignored_types, &fun, true, &api_doc);
+            let vf = handle_fun(&mut buffer, &ignored_types, &fun, true, with_ret,  &api_doc);
             assert!(matches!(vf, ControlFlow::Continue(_)), "if it was fine with serde it should be fine with value.");
-            writeln!(w, "{buffer}").unwrap();
+            w.write_all(buffer.as_bytes()).unwrap();
         }
     }
 }
 
-fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_value: bool, api_doc: &[&str],) -> ControlFlow<()> {
+fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_value: bool, with_ret: bool, api_doc: &[&str],) -> ControlFlow<()> {
     buffer.clear();
     let deprecated = value_get(fun, "deprecated_since");
     if deprecated.is_some() {
         return ControlFlow::Break(());
     }
     let fn_name = value_get(fun, "name").unwrap().as_str().unwrap();
-    let doc = get_doc_for_fn(fn_name, api_doc);
+    let doc = "";
+    // let doc = get_doc_for_fn(fn_name, api_doc);
     buffer.push_str(&doc);
-    buffer.push_str("async fn ");
+    if with_ret { buffer.push_str("async "); }
+    buffer.push_str("fn ");
     buffer.push_str(fn_name.trim_prefix("nvim_"));
     if use_value {
         buffer.push_str(VALUE_SUFFIX);
@@ -309,26 +327,30 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
         buffer.push_str(p_type);
         buffer.push_str(", ");
     }
-    let ret_type = value_get(fun, "return_type").unwrap().as_str().unwrap();
-    let ret_type = if use_value {return_type_to_value(ret_type)}
-        else {
-            let ret_type = return_type_to_serde(ret_type);
-            if ret_type == "impl Deserialize<'static>" {
-                // this does not work yet. So need to rewrite it in template form.
-                // Until rust compiler becomes able to handle it.
-                buffer.insert_str(
-                    generic_template_position,
-                    "<D: Deserialize<'static>>"
-                );
-                "D"
-            } else {
-                ret_type
-            }
-        };
-    buffer.push_str(") -> ");
-    buffer.push_str("error::Result<");
-    buffer.push_str(ret_type);
-    buffer.push('>');
+    if with_ret {
+        let ret_type = value_get(fun, "return_type").unwrap().as_str().unwrap();
+        let ret_type = if use_value {return_type_to_value(ret_type)}
+            else {
+                let ret_type = return_type_to_serde(ret_type);
+                if ret_type == "impl Deserialize<'static>" {
+                    // this does not work yet. So need to rewrite it in template form.
+                    // Until rust compiler becomes able to handle it.
+                    buffer.insert_str(
+                        generic_template_position,
+                        "<D: Deserialize<'static>>"
+                    );
+                    "D"
+                } else {
+                    ret_type
+                }
+            };
+        buffer.push_str(") -> ");
+        buffer.push_str("error::Result<");
+        buffer.push_str(ret_type);
+        buffer.push('>');
+    } else {
+        buffer.push_str(") -> error::Result<()>");
+    }
     buffer.push_str(" {\n");
     {// inside of fn, just call the call_fn with  tuple as arg.
         buffer.push('\t'); // indentation, remove maybe
@@ -350,7 +372,9 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
             buffer.push(')');
         }
         buffer.push(')');
-        buffer.push_str(".await");
+        if with_ret {
+            buffer.push_str(".await");
+        }
         buffer.push('\n');
     }
     buffer.push('}');

@@ -1,5 +1,5 @@
 use crate::{MsgToReader, msgrpc::{self, RESPONSE_CODE}, valueseq};
-pub use crate::generated::Nvimapi;
+pub use crate::generated::{Nvimapi, NvimapiNr};
 use core::{cell::{Cell, RefCell}, ops::DerefMut};
 use std::io::Write;
 use rmpv::Value;
@@ -90,7 +90,25 @@ impl<W: Write> Nvimapi for Nvimrpc<W>
         let rv = rx.await??;
         return Ok(D::deserialize(rv)?);
     }
+
+    fn noret(&self) -> &impl NvimapiNr { self }
 }
+
+impl<W: Write> NvimapiNr for Nvimrpc<W> {
+    fn call_fn_wv(
+        &self,
+        fn_name: String,
+        args: impl crate::valueseq::ValueSeq,
+    ) -> error::Result<()> {
+        todo!()
+    }
+
+    fn call_fn(&self, fn_name: &str, args: impl crate::valueseq::SerialSeq) -> error::Result<()> {
+        todo!()
+    }
+}
+
+
 impl<W: Write> Nvimrpc<W> {
     fn get_next_msg_id(&self) -> u32 {
         let msg_id = self.msgid.get();

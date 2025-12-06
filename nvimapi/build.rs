@@ -6,14 +6,16 @@ use rmpv::Value;
 
 const VALUE_SUFFIX: &str = "_wv";
 const API_DOC_FILE: &str = "/usr/share/nvim/runtime/doc/api.txt";
+const GENERATED_FILENAME: &str = "src/generated.rs";
+const NVIM_API_DUMP: &str = "nvimapi.msgpack";
 
 pub fn main() {
-    println!("cargo::rerun-if-changed=nvimapi.msgpack");
-    let mut api_file = File::open("nvimapi.msgpack").unwrap();
+    println!("cargo::rerun-if-changed={NVIM_API_DUMP}");
+    let mut api_file = File::open(NVIM_API_DUMP).unwrap();
     let v = rmpv::decode::read_value(&mut api_file).unwrap();
     drop(api_file);
     let root = Vec::try_from(v).unwrap();
-    let mut w = File::create("src/generated.rs").unwrap();
+    let mut w = File::create(GENERATED_FILENAME).unwrap();
     writeln!(w, "{HEADER}").unwrap();
     for (key, value) in root {
         if key.as_str().unwrap() == "functions" {
@@ -33,6 +35,9 @@ pub fn main() {
         }
     }
     drop(w);
+    let _ = std::process::Command::new("rustfmt").args([
+        "--edition", "2024", GENERATED_FILENAME,
+    ]).spawn();
     const NVIMAPI_NR: &str = r###"
     pub trait NvimapiNr {
         fn call_fn_wv(
@@ -73,6 +78,8 @@ fn handle_ui_options(w: &mut impl Write, value: &Value,) {
 }
 
 fn handle_ui_events(w: &mut impl Write, value: &Value,) {
+    writeln!(w, "pub mod uievent {{").unwrap();
+    writeln!(w, "pub use super::*;").unwrap();
     let events = value.as_array().unwrap();
     let mut event_names = Vec::with_capacity(events.len());
     let mut event_snake_names = Vec::with_capacity(events.len());
@@ -118,6 +125,8 @@ fn handle_ui_events(w: &mut impl Write, value: &Value,) {
         w.write_all(end_braces.as_bytes()).unwrap();
     }
     deserilize_for_ui_event_enum(w, &event_snake_names, &event_names);
+    writeln!(w, "}}").unwrap();
+    writeln!(w, "pub use uievent::UiEvent;").unwrap();
 }
 
 fn deserilize_for_ui_event_enum(w: &mut impl Write, snakes: &[&str], pascals: &[String]) {

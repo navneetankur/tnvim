@@ -11,17 +11,19 @@ use std::rc::Rc;
 use rmpv::Value;
 mod generated;
 mod nvimapi;
+pub use generated::UiEvent;
+pub use generated::uievent;
+pub use nvimapi::{Nvimapi, NvimapiNr, notification::Notification,};
 mod handler;
-mod manager;
+pub use handler::Handler;
+pub mod manager;
 mod readloop;
 mod msgrpc;
+pub use msgrpc::Request;
 mod valueseq;
 pub use nvimapi::Nvimrpc;
 pub mod error;
 pub use nvimapi::TryFromValue;
-
-use crate::handler::Handler;
-use crate::nvimapi::Nvimapi;
 
 const SERVER_PATH: &str = "/run/user/1000/nvim-server.s";
 pub fn main() {
@@ -34,7 +36,7 @@ pub fn main() {
 pub async fn main_sync(rt: Rc<LocalRuntime>) {
     let writer = std::os::unix::net::UnixStream::connect(SERVER_PATH).unwrap();
     let reader = writer.try_clone().unwrap();
-    manager::start(TestH, rt, reader, writer).await;
+    manager::start(TestH, &rt, reader, writer).await;
 }
 
 pub enum MsgToReader {

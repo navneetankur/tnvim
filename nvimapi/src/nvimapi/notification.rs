@@ -15,6 +15,12 @@ impl Notification {
             Notification::Unknown(u) => &u.0,
         }
     }
+    pub fn into_redraw(self) -> Vec<UiEvent> {
+        match self {
+            Notification::Redraw(this) => this,
+            Notification::Unknown(u) => unreachable!("new notification of type: {}", &u.0),
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for Notification {

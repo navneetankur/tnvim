@@ -7,7 +7,7 @@ async fn loopy<H, W>(
     mut rx: mpsc::Receiver<MsgForHandler>,
     nvim: Rc<Nvimrpc<W>>,
     handler: H,
-    rt: Rc<LocalRuntime>,
+    rt: &LocalRuntime,
 )
 where 
     W: Write + 'static,
@@ -30,7 +30,7 @@ where
 
 pub async fn start<H, W>(
     handler: H,
-    rt: Rc<LocalRuntime>,
+    rt: &LocalRuntime,
     reader: impl Read + Send + 'static,
     writer: W,
 )

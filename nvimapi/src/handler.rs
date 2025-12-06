@@ -1,6 +1,4 @@
-
 use crate::{msgrpc::Request, nvimapi::{Nvimapi, notification::Notification}};
-
 pub trait Handler {
     async fn notify(&self, nvim: &impl Nvimapi, notification: Notification);
     async fn request(&self, nvim: &impl Nvimapi, request: Box<Request>);

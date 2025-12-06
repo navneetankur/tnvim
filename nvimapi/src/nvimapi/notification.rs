@@ -9,6 +9,15 @@ pub enum Notification {
     Unknown(Box<(String, Value)>),
 }
 
+impl Notification {
+    pub fn name(&self) -> & str {
+        match self {
+            Notification::Redraw(_) => "redraw",
+            Notification::Unknown(u) => &u.0,
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for Notification {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

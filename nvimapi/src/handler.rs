@@ -1,9 +1,12 @@
+use std::{io::Write, os::unix::net::UnixStream};
+
 use crate::{Nvimapi, msgrpc::Request, nvimapi::notification::Notification};
 
 pub trait Handler {
-    async fn notify(&self, nvim: &Nvimapi, notification: Notification);
-    async fn request(&self, nvim: &Nvimapi, request: Box<Request>);
-    async fn init(&self, nvim: &Nvimapi);
+    type Write: std::io::Write;
+    async fn notify(&self, nvim: &Nvimapi<Self::Write>, notification: Notification);
+    async fn request(&self, nvim: &Nvimapi<Self::Write>, request: Box<Request>);
+    async fn init(&self, nvim: &Nvimapi<Self::Write>);
 }
 
 pub enum MsgForHandler {

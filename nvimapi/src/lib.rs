@@ -9,6 +9,7 @@ pub use pairs::Pairs;
 use tokio::runtime::LocalRuntime;
 use core::ops::ControlFlow;
 use std::io::{Write, stdout};
+use std::os::unix::net::UnixStream;
 use std::rc::Rc;
 use rmpv::Value;
 mod generated;
@@ -39,7 +40,7 @@ pub async fn main_sync(rt: Rc<LocalRuntime>) {
 
 pub enum MsgToReader {
     PendingRequest(PendingRequest),
-    End,
+    Other,
 }
 impl MsgToReader {
     pub fn new(msg_id: u32, sender: tokio::sync::oneshot::Sender<Value>) -> Self {
@@ -53,7 +54,8 @@ struct PendingRequest {
 
 struct TestH;
 impl Handler for TestH {
-    async fn notify(&self, nvim: &Nvimapi, notification: nvimapi::notification::Notification) {
+    type Write = UnixStream;
+    async fn notify(&self, nvim: &Nvimapi<Self::Write>, notification: nvimapi::notification::Notification) {
         match notification {
             nvimapi::notification::Notification::Redraw(ui_events) => {
                 for event in ui_events {
@@ -64,11 +66,14 @@ impl Handler for TestH {
         }
     }
 
-    async fn request(&self, nvim: &Nvimapi, request: Box<msgrpc::Request>) {
+    async fn request(&self, nvim: &Nvimapi<Self::Write>, request: Box<msgrpc::Request>) {
         println!("request: {request:?}");
     }
 
-    async fn init(&self, nvim: &Nvimapi) {
+    async fn init(&self, nvim: &Nvimapi<Self::Write>) {
         nvim.ui_attach(64, 64, [();0]).await.unwrap();
+        debug!("attached");
+        let w = nvim.strwidth("hillo").await.unwrap();
+        debug!("w: {w}");
     }
 }

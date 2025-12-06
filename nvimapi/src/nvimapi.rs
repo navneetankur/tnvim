@@ -1,6 +1,6 @@
 use crate::{MsgToReader, handler::Handler, msgrpc::{self, RESPONSE_CODE, Request}, nvimapi::notification::Notification, valueseq};
 use core::{cell::{Cell, RefCell}, ops::DerefMut};
-use std::os::unix::net::UnixStream;
+use std::{io::Write, os::unix::net::UnixStream};
 use rmpv::Value;
 use serde::Deserialize;
 use tokio::sync::{mpsc, oneshot};
@@ -14,14 +14,22 @@ pub const TABPAGE_ID: i8 = 2;
 // it will send its message(request) id to main loop.
 // and a channel rx. Where it will get redraw, request or notify messages.
 // then it will call appropriate handler method.
-pub struct Nvimapi
+pub struct Nvimapi<W: Write>
 {
-    // (msgid, oneshot returner.)
-    pub(crate) tx_to_reader: std::sync::mpsc::SyncSender<MsgToReader>,
+    pub(crate) tx_to_reader: mpsc::Sender<MsgToReader>,
     pub(crate) msgid: Cell<u32>,
-    pub(crate) write: RefCell<UnixStream>,
+    pub(crate) write: RefCell<W>,
 }
-impl Nvimapi
+// fn try_send(tx: &std::sync::mpsc::SyncSender<MsgToReader>, msg: MsgToReader) -> error::Result<()> {
+//     if let Err(e) = tx.try_send(msg) {
+//         return match e {
+//             std::sync::mpsc::TrySendError::Full(_) => error::with_msg("channel to reader full. Nvim not replying?"),
+//             std::sync::mpsc::TrySendError::Disconnected(_) => error::with_msg("channel to reader closed."),
+//         };
+//     }
+//     return Ok(());
+// }
+impl<W: Write> Nvimapi<W>
 {
     pub fn send_response(&self, msgid: i32, error: impl serde::Serialize, result: impl serde::Serialize) -> error::Result<()> {
         let mut w = self.write.borrow_mut();
@@ -52,10 +60,12 @@ impl Nvimapi
         let msg_id = self.get_next_msg_id();
         let request = msgrpc::create_request_value(msg_id, fn_name, args);
         let mut w = self.write.borrow_mut();
-        rmpv::encode::write_value(w.deref_mut(), &request)?;
         let (sender, rx) = oneshot::channel::<Value>();
         let msg = MsgToReader::new(msg_id, sender);
-        self.tx_to_reader.send(msg);
+        // this is sent to readloop first, to avoid the possibility that readloop receives the
+        // reply from nvim, but does not have received the corres_request yet.
+        self.tx_to_reader.send(msg).await.unwrap();
+        rmpv::encode::write_value(w.deref_mut(), &request)?;
         let rv = rx.await?;
         return R::try_from_value(rv);
     }
@@ -68,10 +78,12 @@ impl Nvimapi
         let msg_id = self.get_next_msg_id();
         let request = msgrpc::create_request_ser(msg_id, fn_name, args);
         let mut w = self.write.borrow_mut();
-        rmp_serde::encode::write_named(w.deref_mut(), &request)?;
         let (sender, rx) = oneshot::channel::<Value>();
         let msg = MsgToReader::new(msg_id, sender);
-        self.tx_to_reader.send(msg);
+        // this is sent to readloop first, to avoid the possibility that readloop receives the
+        // reply from nvim, but does not have received the corres_request yet.
+        self.tx_to_reader.send(msg).await.unwrap();
+        rmp_serde::encode::write_named(w.deref_mut(), &request)?;
         let rv = rx.await?;
         return Ok(D::deserialize(rv)?);
     }

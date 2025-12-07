@@ -87,7 +87,7 @@ fn handle_ui_events(w: &mut impl Write, value: &Value,) {
         let snake_name = value_get(event, "name").unwrap().as_str().unwrap();
         event_snake_names.push(snake_name);
         let name = snake_to_pascal(snake_name);
-        writeln!(w, r##"#[derive(Deserialize, Debug)]"##).unwrap();
+        writeln!(w, r##"#[derive(Deserialize, serde::Serialize, Debug)]"##).unwrap();
         writeln!(w, "pub struct {name} {{").unwrap();
         event_names.push(name);
         let params = value_get(event, "parameters").unwrap().as_array().unwrap();
@@ -120,6 +120,13 @@ fn handle_ui_events(w: &mut impl Write, value: &Value,) {
         w.write_all(text.as_bytes()).unwrap();
         for (name, &snake) in event_names.iter().zip(&event_snake_names) {
             writeln!(w, "Self::{name}(_) => \"{snake}\",").unwrap();
+
+            ////toremove
+            //writeln!(temp, "UiEvent::{name}(events) => do_{snake}(nvim, events),");
+            //writeln!(temp2, "pub(super) fn do_{snake}(nvim: &impl Nvimapi, events: Vec<uievent::{name}>) {{");
+            //writeln!(temp2, "log::debug!(\"{snake}\");");
+            //writeln!(temp2, "}}");
+            //// done toremove
         }
         w.write_all(b"Self::Unknown(_) => \"unknown\"").unwrap();
         w.write_all(end_braces.as_bytes()).unwrap();

@@ -1,7 +1,10 @@
 #![feature(anonymous_lifetime_in_impl_trait)]
 #![feature(type_alias_impl_trait)]
 #![feature(trim_prefix_suffix)]
+#![feature(iter_array_chunks)]
 // mod out;
+mod manualser;
+pub use manualser::{color::Color};
 mod contseq;
 mod pairs;
 use log::debug;
@@ -13,6 +16,7 @@ mod generated;
 mod nvimapi;
 pub use generated::UiEvent;
 pub use generated::uievent;
+pub use generated::UiOptions;
 pub use nvimapi::{Nvimapi, NvimapiNr, notification::Notification,};
 mod handler;
 pub use handler::Handler;
@@ -25,19 +29,19 @@ pub use nvimapi::Nvimrpc;
 pub mod error;
 pub use nvimapi::TryFromValue;
 
-const SERVER_PATH: &str = "/run/user/1000/nvim-server.s";
-pub fn main() {
-    let rt = tokio::runtime::LocalRuntime::new().unwrap();
-    let rt = Rc::new(rt);
-    let _guard = rt.enter();
-    rt.block_on(main_sync(rt.clone()));
-}
+// const SERVER_PATH: &str = "/run/user/1000/nvim-server.s";
+// pub fn main() {
+//     let rt = tokio::runtime::LocalRuntime::new().unwrap();
+//     let rt = Rc::new(rt);
+//     let _guard = rt.enter();
+//     rt.block_on(main_sync(rt.clone()));
+// }
 
-pub async fn main_sync(rt: Rc<LocalRuntime>) {
-    let writer = std::os::unix::net::UnixStream::connect(SERVER_PATH).unwrap();
-    let reader = writer.try_clone().unwrap();
-    manager::start(TestH, &rt, reader, writer).await;
-}
+// pub async fn main_sync(rt: Rc<LocalRuntime>) {
+//     let writer = std::os::unix::net::UnixStream::connect(SERVER_PATH).unwrap();
+//     let reader = writer.try_clone().unwrap();
+//     manager::start_async(TestH, &rt, reader, writer).await;
+// }
 
 pub enum MsgToReader {
     PendingRequest(PendingRequest),
@@ -65,7 +69,7 @@ impl Handler for TestH {
         match notification {
             nvimapi::notification::Notification::Redraw(ui_events) => {
                 for event in ui_events {
-                    println!("got {}", event.name());
+                    debug!("got {}", event.name());
                 }
             },
             nvimapi::notification::Notification::Unknown(_) => todo!(),
@@ -73,7 +77,7 @@ impl Handler for TestH {
     }
 
     async fn request(&self, _nvim: &impl Nvimapi, request: Box<msgrpc::Request>) {
-        println!("request: {request:?}");
+        debug!("request: {request:?}");
     }
 
     async fn init(&self, nvim: &impl Nvimapi) {

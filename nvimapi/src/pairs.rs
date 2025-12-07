@@ -11,7 +11,7 @@ use crate::{error, TryFromValue};
 /// Will NOT avoid duplicates.
 #[derive(Default, Debug)]
 pub struct Pairs<K = Value, V = K> {
-    inner: Vec<(K, V)>,
+    pub inner: Vec<(K, V)>,
 }
 impl<K, V> Pairs<K, V> {
     pub fn with_capacity(capacity: usize) -> Self {
@@ -29,6 +29,34 @@ impl<K, V> Pairs<K, V> {
     pub fn with(mut self, key: K, value: V) -> Self {
         self.push((key, value));
         return self;
+    }
+    pub fn with_iter<I>(mut self, iter: I) -> Self
+    where 
+        I: IntoIterator<Item = (K,V)>
+    {
+        self.inner.extend(iter);
+        return self;
+    }
+    pub fn from_iter<I>(iter: I) -> Self
+    where 
+        I: IntoIterator<Item = (K,V)>
+    {
+        Self::new().with_iter(iter)
+    }
+}
+impl<K> Pairs<K, K> {
+    pub fn with_flattened_iter<I>(mut self, iter: I) -> Self
+    where 
+        I: IntoIterator<Item = K>
+    {
+        self.inner.extend(iter.into_iter().array_chunks().map(|[k,v]| (k,v)));
+        return self;
+    }
+    pub fn from_flattened_iter<I>(iter: I) -> Self
+    where 
+        I: IntoIterator<Item = K>
+    {
+        Self::new().with_flattened_iter(iter)
     }
 }
 impl<K, V> Pairs<K, V>

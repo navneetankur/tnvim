@@ -1,7 +1,7 @@
 use crate::{MsgToReader, msgrpc::{self, RESPONSE_CODE}, valueseq};
 pub use crate::generated::{Nvimapi, NvimapiNr};
-use core::{cell::{Cell, RefCell}, ops::DerefMut};
-use std::io::Write;
+use core::{cell::{Cell, RefCell}, ops::{Deref, DerefMut}};
+use std::{io::Write, rc::Rc};
 use rmpv::Value;
 use serde::Deserialize;
 use tokio::sync::{mpsc, oneshot};
@@ -11,6 +11,43 @@ pub mod notification;
 pub const BUFFER_ID:  i8 = 0;
 pub const WINDOW_ID:  i8 = 1;
 pub const TABPAGE_ID: i8 = 2;
+
+impl<T: Nvimapi> Nvimapi for Rc<T> {
+    fn noret(&self) -> &impl NvimapiNr {
+        self.deref().noret()
+    }
+
+    fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()> {
+        self.deref().send_response_wv(msgid, error, result)
+    }
+
+    fn send_response(
+        &self,
+        msgid: i32,
+        error: impl serde::Serialize,
+        result: impl serde::Serialize,
+    ) -> error::Result<()> {
+        self.deref().send_response(msgid, error, result)
+    }
+
+    async fn call_fn_wv<R>(
+        &self,
+        fn_name: String,
+        args: impl crate::valueseq::ValueSeq,
+    ) -> error::Result<R>
+    where
+        R: TryFromValue {
+            self.deref().call_fn_wv(fn_name, args).await
+    }
+
+    async fn call_fn<D, S>(&self, fn_name: &str, args: S) -> error::Result<D>
+    where
+        D: Deserialize<'static>,
+        S: crate::valueseq::SerialSeq {
+            self.deref().call_fn(fn_name, args).await
+    }
+}
+
 // will keep a writer to encode with.
 // it will send its message(request) id to main loop.
 pub struct Nvimrpc<W: Write>

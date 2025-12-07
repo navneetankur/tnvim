@@ -1,13 +1,14 @@
 use std::{io::{Read, Write}, rc::Rc};
+use log::debug;
 use tokio::{runtime::LocalRuntime, sync::mpsc};
-use crate::{MsgToReader, Nvimrpc, handler::{Handler, MsgForHandler}, msgrpc::Request, nvimapi::notification::Notification, readloop};
+use crate::{MsgToReader, Nvimapi, Nvimrpc, handler::{Handler, MsgForHandler}, msgrpc::Request, nvimapi::notification::Notification, readloop};
 use core::ops::Deref;
 
 async fn loopy<H, W>(
     mut rx: mpsc::Receiver<MsgForHandler>,
     nvim: Rc<Nvimrpc<W>>,
     handler: H,
-    rt: &LocalRuntime,
+    rt: Rc<LocalRuntime>,
 )
 where 
     W: Write + 'static,
@@ -26,14 +27,36 @@ where
             },
         }
     }
+    debug!("channel closed");
 }
 
-pub async fn start<H, W>(
+pub async fn start_async<H, W>(
     handler: H,
-    rt: &LocalRuntime,
+    rt: Rc<LocalRuntime>,
     reader: impl Read + Send + 'static,
     writer: W,
 )
+where 
+    W: Write + 'static,
+    H: Handler + 'static,
+{
+    start(handler, rt, reader, writer).0.await
+}
+async fn send_request_to_handler<W: Write>(nvim: Rc<Nvimrpc<W>>,handler: Rc<impl Handler>, request: Box<Request>) {
+    handler.request(nvim.deref(), request).await
+}
+async fn send_notification_to_handler<W: Write>(nvim: Rc<Nvimrpc<W>>, handler: Rc<impl Handler>, notification: Notification) {
+    handler.notify(nvim.deref(), notification).await
+}
+async fn init_handler<W:Write>(nvim: Rc<Nvimrpc<W>>, handler: Rc<impl Handler>,) {
+    handler.init(nvim.deref()).await
+}
+pub fn start<H, W>(
+    handler: H,
+    rt: Rc::<LocalRuntime>,
+    reader: impl Read + Send + 'static,
+    writer: W,
+) -> (impl Future<Output = ()>, Rc<impl Nvimapi>)
 where 
     W: Write + 'static,
     H: Handler + 'static,
@@ -48,14 +71,6 @@ where
         msgid: Default::default(),
         write: core::cell::RefCell::new(writer),
     };
-    loopy(rx_for_handler, Rc::new(nvim), handler, rt).await;
-}
-async fn send_request_to_handler<W: Write>(nvim: Rc<Nvimrpc<W>>,handler: Rc<impl Handler>, request: Box<Request>) {
-    handler.request(nvim.deref(), request).await
-}
-async fn send_notification_to_handler<W: Write>(nvim: Rc<Nvimrpc<W>>, handler: Rc<impl Handler>, notification: Notification) {
-    handler.notify(nvim.deref(), notification).await
-}
-async fn init_handler<W:Write>(nvim: Rc<Nvimrpc<W>>, handler: Rc<impl Handler>,) {
-    handler.init(nvim.deref()).await
+    let nvim = Rc::new(nvim);
+    return (loopy(rx_for_handler, nvim.clone(), handler, rt), nvim.clone(),);
 }

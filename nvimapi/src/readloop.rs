@@ -12,7 +12,14 @@ pub fn readloop<R: Read>(
 ) {
     let mut unprocessed_request = Option::<PendingRequest>::None;
     'outer: loop {
-        let message: Message = rmp_serde::decode::from_read(&mut reader).unwrap();
+        let message: Message = 
+            match rmp_serde::decode::from_read(&mut reader) {
+                Ok(message) => message,
+                Err(e) => {
+                    debug!("{e}");
+                    break 'outer;
+                },
+            };
         match message {
             Message::Request(request) => {
                 let msg = MsgForHandler::Request(Box::new(request));
@@ -24,7 +31,19 @@ pub fn readloop<R: Read>(
                     if let Some(unprocessed_request) = unprocessed_request.take() {
                         unprocessed_request
                     } else {
-                        rx.try_recv().unwrap().pending_request()
+                        match rx.try_recv() {
+                            Ok(msg) => msg.pending_request(),
+                            Err(e) => {
+                                // empty means the info about this call was not sent to me.
+                                // As info is sent to me before sending the call to nvim. It's not
+                                // possible miss the info.
+                                if mpsc::error::TryRecvError::Empty == e { continue; }
+                                else {
+                                    debug!("channel gone");
+                                    break 'outer;
+                                }
+                            },
+                        }
                     };
                 if msgid != corres_request.msg_id {
                     debug!("response for msgid: {msgid}, with no receiver");

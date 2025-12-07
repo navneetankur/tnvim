@@ -1,17 +1,83 @@
-use std::os::unix::net::UnixStream;
+use core::time::Duration;
+use std::{io::stdout, os::unix::net::UnixStream, rc::Rc};
+use crossterm::ExecutableCommand;
+use log::debug;
+use nvimapi::Nvimapi;
 use tokio::runtime::LocalRuntime;
-
 use crate::app::App;
 mod app;
 mod nvim;
+mod term;
+use rustc_hash::FxHashMap as HashMap;
+use crossterm::terminal;
+
+const TERM_INPUT_BUFFER_SIZE :usize = 5;
 
 const SERVER: &str = "/run/user/1000/nvim-server.s";
 pub fn main() {
+    setup();
     let rt = LocalRuntime::new().unwrap();
-    rt.block_on(main_async(&rt));
+    let rt = Rc::new(rt);
+    let _enter = rt.enter();
+    rt.block_on(main_async(rt.clone()));
+    drop(_enter);
 }
-async fn main_async(rt: &LocalRuntime) {
-    println!("hello world");
+async fn main_async(rt: Rc<LocalRuntime>) {
+    debug!("hello world");
+    let app = Rc::new(App::default());
+    let (starter, nvim,) = start_nvim(app.clone(), rt.clone());
+    rt.spawn_local(term::input_from_term(app, nvim));
+    starter.await;
+    before_exit();
+}
+
+fn start_nvim(app: Rc<App>, rt: Rc<LocalRuntime>) -> (impl Future, impl Nvimapi) {
     let stream = UnixStream::connect(SERVER).unwrap();
-    nvimapi::manager::start(App::new(), rt, stream.try_clone().unwrap(), stream).await;
+    let (task, nvim) = nvimapi::manager::start(app, rt, stream.try_clone().unwrap(), stream);
+    return (task,nvim);
+}
+
+pub extern "C" fn term_signal(_: core::ffi::c_int) {
+    exit();
+}
+pub fn exit() {
+    before_exit();
+    std::process::exit(0);
+}
+fn before_exit() {
+    let _ = stdout().execute(terminal::LeaveAlternateScreen);
+    let _ = stdout().execute(crossterm::event::DisableBracketedPaste);
+    let _ = crossterm::terminal::disable_raw_mode();
+}
+
+fn setup() {
+    setup_exit();
+    stdout().execute(terminal::EnterAlternateScreen).unwrap();
+    set_panic_hook();
+    terminal::enable_raw_mode().unwrap();
+    let _ = stdout().execute(crossterm::event::EnableBracketedPaste);
+}
+
+fn set_panic_hook() {
+    let hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic_info| {
+        hook(panic_info);
+        exit();
+    }));
+}
+
+fn setup_exit() {
+    use nix::sys::signal;
+
+    let term_signals = [
+        signal::SIGINT,   // Interrupt from keyboard (Ctrl+C)
+        signal::SIGTERM,  // Termination signal
+        signal::SIGHUP,   // Hangup detected on controlling terminal or death of controlling process
+        signal::SIGQUIT,  // Quit from keyboard (Ctrl+\)
+        signal::SIGABRT   // Abort signal from abort()
+    ];
+    for tsignal in term_signals {
+        unsafe { signal::signal(tsignal, signal::SigHandler::Handler(term_signal)).unwrap() };
+    }
+
 }

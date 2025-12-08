@@ -65,9 +65,6 @@ pub(super) async fn do_grid_scroll(this: &App, nvim: &impl Nvimapi, events: Vec<
 pub(super) async fn do_grid_destroy(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridDestroy>) {
     log::info!("grid_destroy");
 }
-pub(super) async fn do_win_pos(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::WinPos>) {
-    log::info!("win_pos");
-}
 pub(super) async fn do_win_float_pos(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::WinFloatPos>) {
     log::info!("win_float_pos");
 }
@@ -79,9 +76,6 @@ pub(super) async fn do_win_hide(this: &App, nvim: &impl Nvimapi, events: Vec<uie
 }
 pub(super) async fn do_win_close(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::WinClose>) {
     log::info!("win_close");
-}
-pub(super) async fn do_msg_set_pos(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::MsgSetPos>) {
-    log::info!("msg_set_pos");
 }
 pub(super) async fn do_win_viewport_margins(
     this: &App, nvim: &impl Nvimapi,

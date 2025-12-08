@@ -6,9 +6,10 @@ edition = "2024"
 [dependencies]
 suffixes.workspace = true
 rustc-hash.workspace = true
-crossterm.workspace = true
+# crossterm.workspace = true
 nvimapi.workspace = true
 rmp.workspace = true
+terminal.workspace = true
 serde_json = "1.0"
 rmpv.workspace = true
 tokio = {workspace = true, features = ["time", "sync"]}

@@ -1,28 +1,28 @@
 use core::time::Duration;
 use std::{io::stdout, os::unix::net::UnixStream, rc::Rc};
-use crossterm::ExecutableCommand;
 use log::debug;
 use nvimapi::Nvimapi;
+use terminal::Terminal;
 use tokio::runtime::LocalRuntime;
 use crate::app::App;
 mod app;
 mod nvim;
 mod term;
 use rustc_hash::FxHashMap as HashMap;
-use crossterm::terminal;
 
 const TERM_INPUT_BUFFER_SIZE :usize = 5;
 
 const SERVER: &str = "/run/user/1000/nvim-server.s";
 pub fn main() {
-    setup();
+    let app = App::default();
+    setup(&app.terminal);
     let rt = LocalRuntime::new().unwrap();
     let rt = Rc::new(rt);
     let _enter = rt.enter();
-    rt.block_on(main_async(rt.clone()));
+    rt.block_on(main_async(rt.clone(), app));
     drop(_enter);
 }
-async fn main_async(rt: Rc<LocalRuntime>) {
+async fn main_async(rt: Rc<LocalRuntime>, app: App) {
     debug!("hello world");
     let app = Rc::new(App::default());
     let (starter, nvim,) = start_nvim(app.clone(), rt.clone());
@@ -45,17 +45,15 @@ pub fn exit() {
     std::process::exit(0);
 }
 fn before_exit() {
-    let _ = stdout().execute(terminal::LeaveAlternateScreen);
-    let _ = stdout().execute(crossterm::event::DisableBracketedPaste);
-    let _ = crossterm::terminal::disable_raw_mode();
+    terminal::leave_alternate_screen();
+    terminal::disable_raw_mode();
 }
 
-fn setup() {
+fn setup(term: &Terminal) {
     setup_exit();
-    stdout().execute(terminal::EnterAlternateScreen).unwrap();
     set_panic_hook();
-    terminal::enable_raw_mode().unwrap();
-    let _ = stdout().execute(crossterm::event::EnableBracketedPaste);
+    term.enter_alternate_screen();
+    term.enable_raw_mode();
 }
 
 fn set_panic_hook() {

@@ -10,6 +10,14 @@ pub struct Data {
     pub hl_attrs: Vec<RgbAttrs>,
     pub grids: crate::HashMap<u16, Grid>,
     pub cursor: Cursor,
+    pub size: Size,
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct Size {
+    pub w: u16,
+    pub h: u16,
+
 }
 
 #[derive(Default, Debug)]
@@ -37,14 +45,25 @@ pub struct RgbAttrs {
     pub blend: u8,
     pub url: String,
 }
-
+#[derive(Default, Debug, Clone, Copy)]
+pub enum GridType {
+    #[default]
+    Normal,
+    Message,
+    Main,
+}
 #[derive(Debug, Default, Clone)]
 pub struct Grid {
-    pub width: u16,
-    pub height: u16,
+    pub size: Size,
+    pub pos: Position,
+    pub grid_type: GridType,
 }
 #[derive(Debug, Default, Clone)]
 pub struct Cursor {
+    pub pos: Position,
+}
+#[derive(Debug, Default, Clone)]
+pub struct Position {
     pub row: u16,
     pub col: u16,
 }
@@ -52,8 +71,8 @@ pub struct Cursor {
 impl App {
     pub fn set_cursor(&self, col: u16, row: u16) {
         let mut data = self.nvimdata.borrow_mut();
-        data.cursor.col = col;
-        data.cursor.row = row;
+        data.cursor.pos.col = col;
+        data.cursor.pos.row = row;
         drop(data);
     }
 

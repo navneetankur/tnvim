@@ -3,6 +3,7 @@ pub use data::Data;
 use log::{debug, warn};
 use nvimapi::{Handler, Notification, Nvimapi, Pairs, Request, UiEvent, UiOptions, uievent, NvimapiNr};
 use crate::app::App;
+pub const MAIN_GRID: u8 = 1;
 
 impl Handler for App {
     async fn notify(&self, nvim: &impl Nvimapi, notification: Notification) {
@@ -19,7 +20,7 @@ impl Handler for App {
 
     async fn init(&self, nvim: &impl Nvimapi) {
         debug!("init");
-        let (w,h) = crossterm::terminal::size().unwrap();
+        let (w,h) = self.terminal.size().unwrap();
         nvim.noret().ui_attach(
         // nvim.ui_attach(
             w.into(),
@@ -27,7 +28,7 @@ impl Handler for App {
            Pairs::new().with_iter([
                (UiOptions::Rgb, true),
                (UiOptions::ExtLinegrid, true),
-               // (UiOptions::ExtMultigrid, true),
+               (UiOptions::ExtMultigrid, true),
                // (UiOptions::ExtCmdline, true),
                // (UiOptions::ExtTabline, true),
                // not sure what below ones do. Let's implement these for now,

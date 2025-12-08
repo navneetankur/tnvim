@@ -1,12 +1,12 @@
 use std::rc::Rc;
-use crossterm::event::{KeyCode, KeyModifiers};
+use terminal::event::{KeyCode, KeyModifiers};
 use log::{debug, info};
 use nvimapi::Nvimapi;
 use tokio::sync::mpsc::{self, error::TrySendError};
 use crate::{TERM_INPUT_BUFFER_SIZE, app::App};
 
 pub async fn input_from_term(this: Rc<App>, nvim: impl Nvimapi) {
-    let (tx, mut rx) = mpsc::channel::<crossterm::event::Event>(TERM_INPUT_BUFFER_SIZE);
+    let (tx, mut rx) = mpsc::channel::<terminal::event::Event>(TERM_INPUT_BUFFER_SIZE);
     std::thread::spawn(|| crosscode_event_loop(tx));
     while let Some(event) = rx.recv().await {
         handle_event(&this, &nvim, event).await;
@@ -14,7 +14,7 @@ pub async fn input_from_term(this: Rc<App>, nvim: impl Nvimapi) {
     ;
 }
 
-async fn on_mouse(this: &App, nvim: &impl Nvimapi, mouse_event: crossterm::event::MouseEvent) {
+async fn on_mouse(this: &App, nvim: &impl Nvimapi, mouse_event: terminal::event::MouseEvent) {
     todo!()
 }
 
@@ -26,8 +26,8 @@ async fn on_resize(this: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
     // todo send to nvim resize info.
 }
 
-async fn on_key(this: &App, nvim: &impl Nvimapi, key_event: crossterm::event::KeyEvent) {
-    use crossterm::event::{KeyCode, KeyModifiers};
+async fn on_key(this: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
+    use terminal::event::{KeyCode, KeyModifiers};
     // debug!("on key: {key_event:?}");
     if key_event.code == KeyCode::Char('c') && key_event.modifiers.contains(KeyModifiers::CONTROL) {
         super::exit();
@@ -46,8 +46,8 @@ async fn on_focus_gained(this: &App, nvim: &impl Nvimapi) {
     todo!()
 }
 
-fn to_nvim_input_key(key_event: crossterm::event::KeyEvent) -> Option<String> {
-    use crossterm::event::{KeyCode};
+fn to_nvim_input_key(key_event: terminal::event::KeyEvent) -> Option<String> {
+    use terminal::event::{KeyCode};
     let mut rv = String::new();
     let mut modifiers = Vec::new();
     modifier_map(key_event.modifiers, &mut modifiers);
@@ -119,8 +119,8 @@ fn modifier_map(modifiers: KeyModifiers, buffer: &mut Vec<char>) {
     }
 }
 
-fn crosscode_event_loop(tx: mpsc::Sender<crossterm::event::Event>) {
-    use crossterm::event::read;
+fn crosscode_event_loop(tx: mpsc::Sender<terminal::event::Event>) {
+    use terminal::event::read;
     use mpsc::error::TrySendError;
     loop {
         if let Err(e) =  tx.try_send(read().unwrap()) {
@@ -135,8 +135,8 @@ fn crosscode_event_loop(tx: mpsc::Sender<crossterm::event::Event>) {
     }
 }
 
-async fn handle_event(this: &App, nvim: &impl Nvimapi, event: crossterm::event::Event) {
-    use crossterm::event::Event;
+async fn handle_event(this: &App, nvim: &impl Nvimapi, event: terminal::event::Event) {
+    use terminal::event::Event;
     match event {
         Event::FocusGained => on_focus_gained(this, nvim).await,
         Event::FocusLost => on_focus_lost(this, nvim).await,

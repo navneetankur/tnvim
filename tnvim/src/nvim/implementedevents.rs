@@ -44,12 +44,11 @@ pub(super) async fn do_hl_attr_define(this: &App, _: &impl Nvimapi, events: Vec<
 }
 pub(super) async fn do_grid_resize(this: &App, _: &impl Nvimapi, events: Vec<uievent::GridResize>) {
     let mut data = this.nvimdata.borrow_mut();
-    for grid in events {
-        let saved_grid = data.grids.entry(grid.grid.u16()).or_default();
-        saved_grid.size.w = grid.width.u16();
-        saved_grid.size.h = grid.height.u16();
-        debug!("resize: g: {}, {}x{}", grid.grid, grid.width, grid.height);
-    }
+    let size = &events[0];
+    assert_eq!(size.grid, 1);
+    data.size.w = size.width.u16();
+    data.size.h = size.height.u16();
+    data.surface = grid::Grid::new(size.height.u(), size.width.u());
     drop(data);
 }
 pub(super) async fn do_grid_clear(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridClear>) {
@@ -75,25 +74,27 @@ pub(super) async fn do_grid_cursor_goto(this: &App, nvim: &impl Nvimapi, events:
     }
 }
 pub(super) async fn do_grid_line(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridLine>) {
-    debug!("grid_line");
-    let mut stdout = stdout();
-    let mut hl_id = 1;
+    trace!("grid_line");
+    let mut prev_hl_id = 1;
     let mut buffer = String::with_capacity(30);
+    let mut data = app.nvimdata.borrow_mut();
     for line in events {
-        let grid = line.grid;
-        let grid_pos = app.grid(grid.u16()).pos();
-        let col = grid_pos.col + line.col_start.u16();
-        let row = grid_pos.row + line.row.u16();
+        let mut col = 0 + line.col_start.u16();
+        let row = 0 + line.row.u16();
         app.terminal.move_cursor(col, row).unwrap();
         // write!(stdout, "g:{_grid}").unwrap();
         buffer.clear();
-        for cell in line.data {
+        for cell  in line.data.into_iter() {
             let Value::Array(cell) = cell else {unreachable!()};
             let mut items = cell.into_iter();
             let text = items.next().unwrap();
             let text = text.as_str().unwrap();
             // debug!("{text}");
-            let hl_id = items.next();
+            let hl_id = items.next()
+                .map(|v|v.as_u64().unwrap().u16())
+                .unwrap_or(prev_hl_id)
+                ;
+            prev_hl_id = hl_id;
             let repeat = items.next().map(|v| v.as_i64().unwrap()).unwrap_or(1);
             for _ in 0..repeat {
                 if text.is_empty() || text == " " {}
@@ -101,34 +102,62 @@ pub(super) async fn do_grid_line(app: &App, nvim: &impl Nvimapi, events: Vec<uie
                     buffer.push_str(text);
                 }
                 app.terminal.print(text).unwrap();
+                let mut chars = text.chars();
+                let char_ = chars.next().unwrap();
+                assert!(chars.next().is_none(), "multiple chars can come. storing of chars in cells logic is wrong here.");
+                let gcell = crate::nvim::data::Cell {
+                    char_,
+                    hl: hl_id,
+                };
+                // if text != " " {
+                //     debug!("{row}, {col}, {}, {text}, {char_}, {}", col.u() + i.u(), ' ');
+                // }
+                data.surface[(row.u(), col.u())] = gcell;
+                col += 1;
             }
         }
         // debug!("g: {grid},r: {row}, c: {col}, t: {buffer}");
     }
-    let data = app.nvimdata.borrow();
     app.terminal.move_cursor(data.cursor.pos.col, data.cursor.pos.row).unwrap();
     drop(data);
 }
 pub(super) async fn do_flush(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::Flush>) {
     stdout().flush().unwrap();
 }
-pub(super) async fn do_msg_set_pos(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::MsgSetPos>) {
-    debug!("msg_set_pos");
-    // pos of message window. on outer window wiz grid 1.
-    for pos in events {
-        // i am setting absolute position here, but nvim sent position relative to main grid. If
-        // position of main grid changes will nvim send grid position again?. Should i save
-        // relative position and calculate absolute position when needed? Needs to be seen.
-        let main_pos = app.grid(MAIN_GRID.into()).pos();
-        let row = pos.row;
-        app.grid(pos.grid.u16()).set_pos(main_pos.col, row.u16());
-        debug!("g: {}, r: {}, s: {}, s:{}", pos.grid, pos.row, pos.scrolled, pos.sep_char);
-    }
-}
-pub(super) async fn do_grid_scroll(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridScroll>) {
+pub(super) async fn do_grid_scroll(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridScroll>) {
     log::info!("grid_scroll");
-    for scroll in events {
-        debug!("g:{}, t:{}, b:{}, l:{}, r:{}, r:{}, c:{}", scroll.grid, scroll.top, scroll.bot, scroll.left, scroll.right, scroll.rows, scroll.cols);
+    let mut data = app.nvimdata.borrow_mut();
+    let mut buffer = [0u8;4];
+    for scroll_event in events {
+        let top = scroll_event.top - scroll_event.rows;
+        let scroll = scroll_event.rows;
+        if scroll > 0 {
+            for row in scroll_event.top..scroll_event.bot {
+                handle_scroll_row(app, &mut data, &mut buffer, &scroll_event, row);
+            }
+        } else {
+            // order of iter has to be reversed or row will overwrite the value from prev loop.
+            for row in (scroll_event.top..scroll_event.bot).rev() {
+                handle_scroll_row(app, &mut data, &mut buffer, &scroll_event, row);
+            }
+        }
+        debug!("g:{}, t:{}, b:{}, l:{}, r:{}, r:{}, c:{}", scroll_event.grid, scroll_event.top, scroll_event.bot, scroll_event.left, scroll_event.right, scroll_event.rows, scroll_event.cols);
+    }
+    drop(data);
+}
+
+fn handle_scroll_row(app: &App, data: &mut std::cell::RefMut<'_, super::Data>, buffer: &mut [u8; 4], scroll_event: &uievent::GridScroll, row: i64) {
+    let scroll = scroll_event.rows;
+    let row = row.u();
+    let Some(new_row) = row.checked_sub_signed(scroll.isize()) else {return;};
+    // let Ok(new_row) = usize::try_from(new_row) else {continue;};
+    app.terminal.move_cursor(scroll_event.left.u16(), new_row.u16()).unwrap();
+    // debug!("move {} to {}.", row, new_row);
+    for col in scroll_event.left..scroll_event.right {
+        let col = col.u();
+        let cell = data.surface[(row.u(), col)];
+        data.surface[(new_row.into(), col)] = cell;
+        app.terminal.print(cell.char_.encode_utf8(buffer)).unwrap();
     }
 }
 // new idea.

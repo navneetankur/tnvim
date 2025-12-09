@@ -158,3 +158,6 @@ pub(super) async fn do_msg_history_clear(this: &App, nvim: &impl Nvimapi, events
 pub(super) async fn do_error_exit(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::ErrorExit>) {
     log::info!("error_exit");
 }
+pub(super) async fn do_msg_set_pos(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::MsgSetPos>) {
+    log::info!("msg_set_pos");
+}

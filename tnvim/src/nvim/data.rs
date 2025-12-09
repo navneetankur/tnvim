@@ -8,9 +8,15 @@ use crate::app::App;
 pub struct Data {
     pub color_set: ColorSet,
     pub hl_attrs: VecI1<RgbAttrs>,
-    pub grids: crate::HashMap<u16, Grid>,
     pub cursor: Cursor,
     pub size: Size,
+    pub surface: grid::Grid<Cell>,
+}
+
+#[derive(Default, Debug, Clone, Copy)]
+pub struct Cell {
+    pub char_: char,
+    pub hl: u16,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -19,7 +25,6 @@ pub struct Size {
     pub h: u16,
 
 }
-
 #[derive(Default, Debug)]
 pub struct ColorSet {
     pub fg: Color,
@@ -88,26 +93,5 @@ impl App {
         data.cursor.pos.row = row;
         drop(data);
     }
-    pub fn grid(&self, id: u16) -> Grid<'_> {
-        Grid(id, &self.nvimdata)
-    }
 }
-
-pub struct Grid<'d>(u16, &'d RefCell<Data>);
-impl<'d> Grid<'d> {
-    pub fn set_pos(&self, col: u16, row: u16) -> &Self {
-        self.1.borrow_mut().grids.entry(self.0).or_default()
-            .pos = super::Position::new(col, row);
-        self
-    }
-    pub fn pos(&self) -> Position {
-        self.1.borrow().grids.get(&self.0).unwrap_or(&super::Grid::default())
-            .pos.clone()
-    }
-    pub fn size(&self) -> anyhow::Result<Size> {
-        self.1.borrow().grids.get(&self.0).ok_or_else(|| anyhow!("grid missing"))?
-            .size.clone().ok()
-    }
-}
-
 }

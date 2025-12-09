@@ -2,6 +2,8 @@ use core::time::Duration;
 use std::{io::stdout, os::unix::net::UnixStream, rc::Rc};
 use log::debug;
 use nvimapi::Nvimapi;
+mod terminal;
+pub mod error;
 use terminal::Terminal;
 use tokio::runtime::LocalRuntime;
 use crate::app::App;
@@ -12,7 +14,8 @@ use rustc_hash::FxHashMap as HashMap;
 
 const TERM_INPUT_BUFFER_SIZE :usize = 5;
 
-const SERVER: &str = "/run/user/1000/nvim-server.s";
+// pub const SERVER: &str = "/run/user/1000/nvim-server-temp.s";
+pub const SERVER: &str = "/run/user/1000/nvim-server.s";
 pub fn main() {
     let app = App::default();
     setup(&app.terminal);

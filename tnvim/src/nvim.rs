@@ -28,7 +28,8 @@ impl Handler for App {
            Pairs::new().with_iter([
                (UiOptions::Rgb, true),
                (UiOptions::ExtLinegrid, true),
-               (UiOptions::ExtMultigrid, true),
+               // (UiOptions::ExtMultigrid, true), //multigrid is broken. Doesn't send any info on
+               // reattach.
                // (UiOptions::ExtCmdline, true),
                // (UiOptions::ExtTabline, true),
                // not sure what below ones do. Let's implement these for now,

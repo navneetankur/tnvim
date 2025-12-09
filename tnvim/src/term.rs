@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use crate::terminal;
 use terminal::event::{KeyCode, KeyModifiers};
 use log::{debug, info};
 use nvimapi::Nvimapi;

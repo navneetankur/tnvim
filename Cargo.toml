@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["nvimapi", "terminal", "tnvim",]
+members = ["nvimapi", "tnvim",]
 exclude = []
 
 [profile.dev]
@@ -26,10 +26,12 @@ serde_repr = {version = "0.1"}
 env_logger = "0.11"
 rustc-hash = "2.1"
 nvimapi = {path = "nvimapi"}
-terminal = {path = "terminal", package = "tnvim_terminal"}
 tokio = {version = "1.48", features = ["net", "rt"]}
 signal-hook = "0.3"
 nix = "0.30"
+anyhow = "1.0"
+veci1 = {path = "../veci1"}
+grid = "1.0"
 
 [workspace.lints]
 

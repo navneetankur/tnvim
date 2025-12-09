@@ -12,8 +12,19 @@ fn main() {
     //     .init();
     init_logger();
     log_panics::init();
+    // start_nvim();
     tnvim::main();
 }
+
+fn start_nvim() {
+    use tnvim::SERVER;
+    use std::fs;
+    let _ = fs::remove_file(SERVER);
+    std::process::Command::new("nvim")
+        .args(["--listen", SERVER, "--headless"])
+        .spawn().unwrap();
+}
+
 const LOG_FIFO: &str = "/home/navn/workspace/rust/tnvim/log.fifo";
 pub fn init_logger() {
     // let fp = std::fs::File::create(LOG_FILE).unwrap();

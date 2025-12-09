@@ -1,8 +1,8 @@
-pub mod error;
+use crate::error;
 use core::cell::RefCell;
 use std::io::{Stdout, stdout};
-pub use crossterm::event;
 use crossterm::{ExecutableCommand, QueueableCommand, style::Print, terminal::{self, LeaveAlternateScreen}};
+pub use crossterm::event;
 pub struct Terminal {
     stdout: RefCell<Stdout>,
 }
@@ -32,6 +32,15 @@ impl Terminal {
     pub fn size(&self) -> error::Result<(u16, u16)> {
         let (w,h) = crossterm::terminal::size()?;
         Ok((w, h))
+    }
+
+    pub fn clear_row(&self) -> Ret<'_> {
+        self.stdout.borrow_mut().queue(crossterm::terminal::Clear(terminal::ClearType::CurrentLine))?;
+        Ok(self)
+    }
+    pub fn clear_screen(&self) -> Ret<'_> {
+        self.stdout.borrow_mut().queue(crossterm::terminal::Clear(terminal::ClearType::All))?;
+        Ok(self)
     }
 }
 impl Default for Terminal {

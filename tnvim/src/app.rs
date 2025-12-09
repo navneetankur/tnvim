@@ -1,5 +1,6 @@
 use core::cell::RefCell;
 
+use crate::terminal;
 use terminal::Terminal;
 
 use crate::nvim;

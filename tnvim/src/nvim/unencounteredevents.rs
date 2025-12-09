@@ -2,6 +2,15 @@ use nvimapi::{Nvimapi, uievent};
 use crate::app::App;
 
 
+pub(super) async fn do_set_scroll_region(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::SetScrollRegion>) {
+    log::info!("set_scroll_region");
+    // for scroll in events {
+    //     debug!("t: {}, b: {}, l: {}, r:{}", scroll.top, scroll.bot, scroll.left, scroll.right);
+    // }
+}
+pub(super) async fn do_scroll(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::Scroll>) {
+    log::info!("scroll");
+}
 pub(super) async fn do_update_menu(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::UpdateMenu>) {
     log::info!("update_menu");
 }
@@ -52,15 +61,6 @@ pub(super) async fn do_highlight_set(this: &App, nvim: &impl Nvimapi, events: Ve
 }
 pub(super) async fn do_put(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::Put>) {
     log::info!("put");
-}
-pub(super) async fn do_set_scroll_region(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::SetScrollRegion>) {
-    log::info!("set_scroll_region");
-}
-pub(super) async fn do_scroll(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::Scroll>) {
-    log::info!("scroll");
-}
-pub(super) async fn do_grid_scroll(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridScroll>) {
-    log::info!("grid_scroll");
 }
 pub(super) async fn do_grid_destroy(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridDestroy>) {
     log::info!("grid_destroy");

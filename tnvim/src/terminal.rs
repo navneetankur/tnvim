@@ -8,16 +8,26 @@ pub struct Terminal {
 }
 type Ret<'t> = error::Result<&'t Terminal>;
 impl Terminal {
-    pub fn enter_alternate_screen(&self) {
-        self.stdout.borrow_mut().execute(crossterm::terminal::EnterAlternateScreen).unwrap();
+    pub fn enter_alternate_screen(&self) -> Ret {
+        self.stdout.borrow_mut().execute(crossterm::terminal::EnterAlternateScreen)?;
+        Ok(self)
     }
-    pub fn enable_raw_mode(&self) {
-        crossterm::terminal::enable_raw_mode().unwrap();
+    pub fn enable_raw_mode(&self) -> Ret {
+        crossterm::terminal::enable_raw_mode()?;
+        Ok(self)
     }
 
     pub fn set_title(&self, title: &str) -> error::Result<&Self> {
         self.stdout.borrow_mut().execute(crossterm::terminal::SetTitle(title))?;
         return Ok(self);
+    }
+    pub fn enable_mouse_events(&self) -> Ret {
+        self.stdout.borrow_mut().execute(crossterm::event::EnableMouseCapture)?;
+        Ok((self))
+    }
+    pub fn disable_mouse_events(&self) -> Ret {
+        self.stdout.borrow_mut().execute(crossterm::event::DisableMouseCapture)?;
+        Ok((self))
     }
 
     pub fn move_cursor(&self, col: u16, row: u16) -> error::Result<&Self> {
@@ -72,4 +82,7 @@ pub fn leave_alternate_screen() {
 }
 pub fn disable_raw_mode() {
     crossterm::terminal::disable_raw_mode().unwrap();
+}
+pub fn disable_mouse_events() -> std::result::Result<(), std::io::Error> {
+    stdout().execute(crossterm::event::DisableMouseCapture).map(|_|())
 }

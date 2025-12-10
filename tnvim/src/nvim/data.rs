@@ -11,14 +11,19 @@ pub struct Data {
     pub hl_attrs: VecI1<RgbAttrs>,
     pub cursor: Cursor,
     pub size: Size,
-    pub surface: grid::Grid<Cell>,
+    pub surface: grid::Grid<Option<Cell>>,
     pub current_hl_id: u16,
 }
 
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Cell {
     pub char_: char,
     pub hl: u16,
+}
+impl Default for Cell {
+    fn default() -> Self {
+        Self { char_: ' ', hl: 0 }
+    }
 }
 
 #[derive(Default, Debug, Clone)]

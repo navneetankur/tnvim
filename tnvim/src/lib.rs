@@ -50,13 +50,15 @@ pub fn exit() {
 fn before_exit() {
     terminal::leave_alternate_screen();
     terminal::disable_raw_mode();
+    terminal::disable_mouse_events();
 }
 
 fn setup(term: &Terminal) {
     setup_exit();
     set_panic_hook();
-    term.enter_alternate_screen();
-    term.enable_raw_mode();
+    term.enter_alternate_screen().unwrap();
+    term.enable_raw_mode().unwrap();
+    term.enable_mouse_events().unwrap();
 }
 
 fn set_panic_hook() {

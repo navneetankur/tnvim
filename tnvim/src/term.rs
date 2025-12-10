@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use crate::terminal;
 use terminal::event::{KeyCode, KeyModifiers};
-use log::{debug, info};
+use log::{debug, info, trace};
 use nvimapi::{Nvimapi, NvimapiNr};
 use tokio::sync::mpsc::{self, error::TrySendError};
 use crate::{TERM_INPUT_BUFFER_SIZE, app::App};
@@ -15,8 +15,64 @@ pub async fn input_from_term(this: Rc<App>, nvim: impl Nvimapi) {
     ;
 }
 
-async fn on_mouse(this: &App, nvim: &impl Nvimapi, mouse_event: terminal::event::MouseEvent) {
-    todo!()
+async fn on_mouse(app: &App, nvim: &impl Nvimapi, mouse_event: terminal::event::MouseEvent) {
+    // debug!("got here");
+    let (btn, action) = 
+        match mouse_event.kind {
+            crossterm::event::MouseEventKind::Down(mouse_button) => {
+                let btn = btn_str(mouse_button);
+                let action = "press";
+                (btn, action)
+            },
+            crossterm::event::MouseEventKind::Up(mouse_button) => {
+                let btn = btn_str(mouse_button);
+                let action = "release";
+                (btn, action)
+            },
+            crossterm::event::MouseEventKind::Drag(mouse_button) => {
+                let btn = btn_str(mouse_button);
+                let action = "drag";
+                (btn, action)
+            },
+            crossterm::event::MouseEventKind::Moved => {
+                let btn = "move";
+                let action = "";
+                (btn, action)
+            },
+            crossterm::event::MouseEventKind::ScrollDown => {
+                let btn = "wheel";
+                let action = "down";
+                (btn, action)
+            },
+            crossterm::event::MouseEventKind::ScrollUp => {
+                let btn = "wheel";
+                let action = "up";
+                (btn, action)
+            },
+            crossterm::event::MouseEventKind::ScrollLeft => {
+                let btn = "wheel";
+                let action = "left";
+                (btn, action)
+            },
+            crossterm::event::MouseEventKind::ScrollRight => {
+                let btn = "wheel";
+                let action = "right";
+                (btn, action)
+            },
+        };
+    let mut mods = Vec::new();
+    modifier_map(mouse_event.modifiers, &mut mods);
+    let mods: String = mods.iter().collect();
+    nvim.nr().input_mouse(btn, action, &mods, 1, mouse_event.row.into(), mouse_event.column.into()).unwrap();
+    // nvim.input_mouse(btn, action, &mods, 1, mouse_event.row.into(), mouse_event.column.into()).await.unwrap();
+    // debug!("{}, {}, {}, {}, {}, {}", btn, action, mods, 0, mouse_event.row, mouse_event.column);
+    fn btn_str(btn: crossterm::event::MouseButton) -> &'static str {
+        match btn {
+            crossterm::event::MouseButton::Left => "left",
+            crossterm::event::MouseButton::Right => "right",
+            crossterm::event::MouseButton::Middle => "middle",
+        }
+    }
 }
 
 async fn on_paste(this: &App, nvim: &impl Nvimapi, paste: String) {
@@ -30,7 +86,7 @@ async fn on_resize(this: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
 
 async fn on_key(this: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
     use terminal::event::{KeyCode, KeyModifiers};
-    // debug!("on key: {key_event:?}");
+    trace!("on key: {key_event:?}");
     if key_event.code == KeyCode::Char('c') && key_event.modifiers.contains(KeyModifiers::CONTROL) {
         super::exit();
     } else {

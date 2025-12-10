@@ -21,7 +21,7 @@ impl Handler for App {
     async fn init(&self, nvim: &impl Nvimapi) {
         debug!("init");
         let (w,h) = self.terminal.size().unwrap();
-        nvim.noret().ui_attach(
+        nvim.nr().ui_attach(
         // nvim.ui_attach(
             w.into(),
            h.into(),

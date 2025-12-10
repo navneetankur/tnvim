@@ -51,7 +51,7 @@ pub fn main() {
 
     const NVIMAPI_DECL: &str = r###"
     pub trait Nvimapi {
-        fn noret(&self) -> &impl NvimapiNr;
+        fn nr(&self) -> &impl NvimapiNr;
         fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()>;
         fn send_response(&self, msgid: i32, error: impl serde::Serialize, result: impl serde::Serialize) -> error::Result<()>;
         async fn call_fn_wv<R>(&self, fn_name: String, args: impl crate::valueseq::ValueSeq) -> error::Result<R>

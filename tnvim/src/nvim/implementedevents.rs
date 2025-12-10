@@ -13,15 +13,16 @@ pub(super) async fn do_set_title(app: &App, _: &impl Nvimapi, events: Vec<uieven
     let st = &events[0];
     app.terminal.set_title(&st.title).unwrap();
 }
-pub(super) async fn do_default_colors_set(this: &App, _: &impl Nvimapi, events: Vec<uievent::DefaultColorsSet>) {
+pub(super) async fn do_default_colors_set(app: &App, _: &impl Nvimapi, events: Vec<uievent::DefaultColorsSet>) {
     let colors = &events[0];
     let fg = NColor::from(colors.rgb_fg);
     let bg = NColor::from(colors.rgb_bg);
     let sp = NColor::from(colors.rgb_sp);
-    let mut data = this.nvimdata.borrow_mut();
+    let mut data = app.nvimdata.borrow_mut();
     data.color_set.fg = fg;
     data.color_set.bg = bg;
     data.color_set.sp = sp;
+    data.apply_hl_id_forced(0, &app.terminal);
     drop(data);
 }
 pub(super) async fn do_hl_attr_define(this: &App, _: &impl Nvimapi, events: Vec<uievent::HlAttrDefine>) {
@@ -30,15 +31,15 @@ pub(super) async fn do_hl_attr_define(this: &App, _: &impl Nvimapi, events: Vec<
 
     let last_id = events.last().unwrap().id.u();
     
-    if rgb_attrs.len() <= last_id {
-        rgb_attrs.resize(last_id + 1, RgbAttrs::default());
+    if rgb_attrs.len() < last_id {
+        rgb_attrs.resize(last_id, RgbAttrs::default());
         // unsafe resize would not work as it contains a string.
     }
 
-    for event in events {
-        let rgb_attr = RgbAttrs::deserialize(Value::Map(event.rgb_attrs.inner)).unwrap();
-        debug!("hlid: {}", event.id);
-        rgb_attrs[event.id.u()] = rgb_attr;
+    for hl_define in events {
+        let rgb_attr = RgbAttrs::deserialize(Value::Map(hl_define.rgb_attrs.inner)).unwrap();
+        // debug!("hlid: {}", hl_define.id);
+        rgb_attrs[hl_define.id.u()] = rgb_attr;
     }
     drop(data);
 }
@@ -75,12 +76,13 @@ pub(super) async fn do_grid_cursor_goto(this: &App, nvim: &impl Nvimapi, events:
 }
 pub(super) async fn do_grid_line(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridLine>) {
     trace!("grid_line");
-    let mut prev_hl_id = 1;
+    let mut current_hl_id = 1;
     let mut buffer = String::with_capacity(30);
     let mut data = app.nvimdata.borrow_mut();
     for line in events {
         let mut col = 0 + line.col_start.u16();
         let row = 0 + line.row.u16();
+        // debug!("row: {row}");
         app.terminal.move_cursor(col, row).unwrap();
         // write!(stdout, "g:{_grid}").unwrap();
         buffer.clear();
@@ -90,11 +92,18 @@ pub(super) async fn do_grid_line(app: &App, nvim: &impl Nvimapi, events: Vec<uie
             let text = items.next().unwrap();
             let text = text.as_str().unwrap();
             // debug!("{text}");
-            let hl_id = items.next()
-                .map(|v|v.as_u64().unwrap().u16())
-                .unwrap_or(prev_hl_id)
-                ;
-            prev_hl_id = hl_id;
+            // let hl_id = items.next()
+            //     .map(|v|v.as_u64().unwrap().u16())
+            //     .unwrap_or(prev_hl_id)
+            //     ;
+            if let Some(hl_id) = items.next() {
+                // debug!("hlid: {hl_id}");
+                // debug!("hlid: {hl_id}, t: {text}");
+                let hl_id = hl_id.as_u64().unwrap().u16();
+                current_hl_id = hl_id;
+                data.apply_hl_id(current_hl_id, &app.terminal);
+            } 
+            // prev_hl_id = hl_id;
             let repeat = items.next().map(|v| v.as_i64().unwrap()).unwrap_or(1);
             for _ in 0..repeat {
                 if text.is_empty() || text == " " {}
@@ -107,7 +116,7 @@ pub(super) async fn do_grid_line(app: &App, nvim: &impl Nvimapi, events: Vec<uie
                 assert!(chars.next().is_none(), "multiple chars can come. storing of chars in cells logic is wrong here.");
                 let gcell = crate::nvim::data::Cell {
                     char_,
-                    hl: hl_id,
+                    hl: current_hl_id.u16(),
                 };
                 // if text != " " {
                 //     debug!("{row}, {col}, {}, {text}, {char_}, {}", col.u() + i.u(), ' ');
@@ -125,23 +134,23 @@ pub(super) async fn do_flush(this: &App, nvim: &impl Nvimapi, events: Vec<uieven
     stdout().flush().unwrap();
 }
 pub(super) async fn do_grid_scroll(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridScroll>) {
-    log::info!("grid_scroll");
+    log::trace!("grid_scroll");
+    debug!("grid_scroll");
     let mut data = app.nvimdata.borrow_mut();
     let mut buffer = [0u8;4];
     for scroll_event in events {
-        let top = scroll_event.top - scroll_event.rows;
         let scroll = scroll_event.rows;
         if scroll > 0 {
-            for row in scroll_event.top..scroll_event.bot {
+            for row in (scroll_event.top + scroll)..scroll_event.bot {
                 handle_scroll_row(app, &mut data, &mut buffer, &scroll_event, row);
             }
         } else {
             // order of iter has to be reversed or row will overwrite the value from prev loop.
-            for row in (scroll_event.top..scroll_event.bot).rev() {
+            for row in (scroll_event.top..(scroll_event.bot+scroll)).rev() {
                 handle_scroll_row(app, &mut data, &mut buffer, &scroll_event, row);
             }
         }
-        debug!("g:{}, t:{}, b:{}, l:{}, r:{}, r:{}, c:{}", scroll_event.grid, scroll_event.top, scroll_event.bot, scroll_event.left, scroll_event.right, scroll_event.rows, scroll_event.cols);
+        // debug!("g:{}, t:{}, b:{}, l:{}, r:{}, r:{}, c:{}", scroll_event.grid, scroll_event.top, scroll_event.bot, scroll_event.left, scroll_event.right, scroll_event.rows, scroll_event.cols);
     }
     drop(data);
 }

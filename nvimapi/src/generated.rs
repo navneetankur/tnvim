@@ -72,7 +72,7 @@ impl TryFromValue for Tabpage {
 }
 
 pub trait Nvimapi {
-    fn noret(&self) -> &impl NvimapiNr;
+    fn nr(&self) -> &impl NvimapiNr;
     fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()>;
     fn send_response(
         &self,

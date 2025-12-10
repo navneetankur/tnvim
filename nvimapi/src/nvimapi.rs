@@ -13,8 +13,8 @@ pub const WINDOW_ID:  i8 = 1;
 pub const TABPAGE_ID: i8 = 2;
 
 impl<T: Nvimapi> Nvimapi for Rc<T> {
-    fn noret(&self) -> &impl NvimapiNr {
-        self.deref().noret()
+    fn nr(&self) -> &impl NvimapiNr {
+        self.deref().nr()
     }
 
     fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()> {
@@ -128,7 +128,7 @@ impl<W: Write> Nvimapi for Nvimrpc<W>
         return Ok(D::deserialize(rv)?);
     }
 
-    fn noret(&self) -> &impl NvimapiNr { self }
+    fn nr(&self) -> &impl NvimapiNr { self }
 }
 
 impl<W: Write> NvimapiNr for Nvimrpc<W> {

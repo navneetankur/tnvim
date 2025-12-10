@@ -2,7 +2,7 @@ use std::rc::Rc;
 use crate::terminal;
 use terminal::event::{KeyCode, KeyModifiers};
 use log::{debug, info};
-use nvimapi::Nvimapi;
+use nvimapi::{Nvimapi, NvimapiNr};
 use tokio::sync::mpsc::{self, error::TrySendError};
 use crate::{TERM_INPUT_BUFFER_SIZE, app::App};
 
@@ -24,6 +24,7 @@ async fn on_paste(this: &App, nvim: &impl Nvimapi, paste: String) {
 }
 
 async fn on_resize(this: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
+    nvim.nr().ui_try_resize(w.into(), h.into()).unwrap();
     // todo send to nvim resize info.
 }
 

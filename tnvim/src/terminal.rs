@@ -42,6 +42,22 @@ impl Terminal {
         self.stdout.borrow_mut().queue(crossterm::terminal::Clear(terminal::ClearType::All))?;
         Ok(self)
     }
+
+    pub(crate) fn set_foreground_color(&self, fg: nvimapi::Color) -> Ret<'_> {
+        self.stdout.borrow_mut().queue(crossterm::style::SetForegroundColor(crossterm::style::Color::Rgb { r: fg.r, g: fg.g, b: fg.b }))?;
+        Ok(self)
+    }
+    pub(crate) fn set_background_color(&self, bg: nvimapi::Color) -> Ret<'_> {
+        self.stdout.borrow_mut().queue(crossterm::style::SetBackgroundColor(crossterm::style::Color::Rgb { r: bg.r, g: bg.g, b: bg.b }))?;
+        Ok(self)
+    }
+    pub(crate) fn set_colors(&self, bg: nvimapi::Color, fg:nvimapi::Color) -> Ret<'_> {
+        self.stdout.borrow_mut().queue(crossterm::style::SetColors(crossterm::style::Colors {
+            foreground: Some(crossterm::style::Color::Rgb { r: fg.r, g: fg.g, b: fg.b }),
+            background: Some(crossterm::style::Color::Rgb { r: bg.r, g: bg.g, b: bg.b }),
+        }))?;
+        Ok(self)
+    }
 }
 impl Default for Terminal {
     fn default() -> Self {

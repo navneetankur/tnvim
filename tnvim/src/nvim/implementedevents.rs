@@ -55,7 +55,7 @@ pub(super) async fn do_grid_resize(this: &App, _: &impl Nvimapi, events: Vec<uie
 pub(super) async fn do_grid_clear(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridClear>) {
     assert_eq!(events[0].grid, 1, "I only clear whole screen assuming there is only one grid.");
     let mut data = app.nvimdata.borrow_mut();
-    data.surface.iter_mut().for_each(|v| *v = None);
+    data.surface.iter_mut().for_each(|v| *v = Default::default());
     data.apply_hl_id(0, &app.terminal);
     app.terminal.clear_screen().unwrap();
     trace!("grid_clear");
@@ -115,7 +115,7 @@ pub(super) async fn do_grid_line(app: &App, nvim: &impl Nvimapi, events: Vec<uie
                 // if text != " " {
                 //     debug!("{row}, {col}, {}, {text}, {char_}, {}", col.u() + i.u(), ' ');
                 // }
-                data.surface[(row.u(), col.u())] = Some(gcell);
+                data.surface[(row.u(), col.u())] = gcell;
                 col += 1;
             }
         }
@@ -160,11 +160,7 @@ fn handle_scroll_row(app: &App, data: &mut std::cell::RefMut<'_, super::Data>, b
         let col = col.u();
         let cell = data.surface[(row.u(), col)];
         // let Some(cell) = cell else {continue;};
-        let cell = cell.unwrap_or(super::data::Cell {
-            char_: ' ',
-            hl: 0,
-        });
-        data.surface[(new_row.into(), col)] = Some(cell);
+        data.surface[(new_row.into(), col)] = cell;
         data.apply_hl_id(cell.hl, &app.terminal);
         app.terminal.print(cell.char_.encode_utf8(buffer)).unwrap();
     }

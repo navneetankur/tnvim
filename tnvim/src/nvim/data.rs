@@ -11,7 +11,7 @@ pub struct Data {
     pub hl_attrs: VecI1<RgbAttrs>,
     pub cursor: Cursor,
     pub size: Size,
-    pub surface: grid::Grid<Option<Cell>>,
+    pub surface: grid::Grid<Cell>,
     pub current_hl_id: u16,
 }
 

@@ -130,7 +130,7 @@ pub(super) async fn do_flush(this: &App, nvim: &impl Nvimapi, events: Vec<uieven
 }
 pub(super) async fn do_grid_scroll(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridScroll>) {
     log::trace!("grid_scroll");
-    debug!("grid_scroll");
+    // debug!("grid_scroll");
     let mut data = app.nvimdata.borrow_mut();
     let mut buffer = [0u8;4];
     for scroll_event in events {
@@ -167,17 +167,17 @@ fn handle_scroll_row(app: &App, data: &mut std::cell::RefMut<'_, super::Data>, b
     }
 }
 pub(super) async fn do_mode_change(app: &App, nvim: &impl Nvimapi, mode_changes: Vec<uievent::ModeChange>) {
-    debug!("{mode_changes:?}");
+    // debug!("{mode_changes:?}");
     for mode in mode_changes {
         let cursor_shape = app.nvimdata.borrow().mode_cursors[mode.mode_idx.u()];
-        debug!("{cursor_shape:?}");
+        // debug!("{cursor_shape:?}");
         app.terminal.set_cursor_shape(cursor_shape).unwrap();
     }
     // mode (normal, insert) has changed.
 }
 pub(super) async fn do_mode_info_set(app: &App, nvim: &impl Nvimapi, mode_info_sets: Vec<uievent::ModeInfoSet>) {
     let json = serde_json::to_string(&mode_info_sets).unwrap();
-    debug!("{json}");
+    // debug!("{json}");
     let mut mode_cursors = Vec::<CursorShape>::new();
     for mode_info in mode_info_sets {
         // I always assume that mode_info.enabled is true. Why would i not want cursor shaped.
@@ -217,7 +217,7 @@ pub(super) async fn do_mode_info_set(app: &App, nvim: &impl Nvimapi, mode_info_s
 
         }
     }
-    debug!("cshapes: {mode_cursors:?}");
+    // debug!("cshapes: {mode_cursors:?}");
     app.nvimdata.borrow_mut().mode_cursors = mode_cursors;
 }
 // new idea.

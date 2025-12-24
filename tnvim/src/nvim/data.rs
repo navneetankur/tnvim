@@ -1,5 +1,5 @@
 use log::debug;
-use nvimapi::Color;
+use nvimapi::{Color, uievent::Tabpage};
 use serde::Deserialize;
 use suffixes::CastIt;
 use veci1::VecI1;
@@ -15,7 +15,7 @@ pub struct Data {
     pub surface: grid::Grid<Cell>,
     pub current_hl_id: u16,
     pub mode_cursors: Vec<CursorShape>,
-    pub ignore_mode: bool,
+    pub my_tab: Option<Tabpage>,
 }
 
 #[derive(Debug, Clone, Copy)]

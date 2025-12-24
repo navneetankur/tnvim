@@ -114,13 +114,18 @@ async fn on_key(app: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyE
     }
 }
 
-async fn on_focus_lost(_: &App, nvim: &impl Nvimapi) {
+async fn on_focus_lost(app: &App, nvim: &impl Nvimapi) {
     nvim.nr().ui_set_focus(false).unwrap();
     nvim.nr().ui_detach().unwrap();
+    let current_tab = nvim.get_current_tabpage().await.unwrap();
+    app.nvimdata.borrow_mut().my_tab = Some(current_tab);
 }
 async fn on_focus_gained(app: &App, nvim: &impl Nvimapi) {
     nvim.nr().ui_set_focus(true).unwrap();
     let size = app.nvimdata.borrow().ui_size.clone();
+    if let Some(my_tab) = app.nvimdata.borrow().my_tab.as_ref() {
+
+    }
     crate::attach(nvim, size.w, size.h);
     // debug!("focus_gained");
 }

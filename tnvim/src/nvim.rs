@@ -1,17 +1,48 @@
 mod data;
 pub use data::Data;
 use log::{debug, warn};
-use nvimapi::{Handler, Notification, Nvimapi, Pairs, Request, UiEvent, UiOptions, uievent, NvimapiNr};
+use nvimapi::{Handler, Notification, Nvimapi, NvimapiNr, Pairs, Request, TryFromValue, UiEvent, UiOptions, uievent};
+use rmpv::Value;
 use crate::app::App;
 pub const MAIN_GRID: u8 = 1;
 
+
+async fn redraw_notification(app: &App, nvim: &impl Nvimapi, redraw: Vec<UiEvent>) {
+    for event in redraw {
+        handle_uievent(app, nvim, event).await;
+    }
+}
+fn value_get<'v>(map: &'v Value, key: &str) -> Option<&'v Value> {
+    let map = map.as_map().unwrap();
+    for (k,v) in map {
+        if k.as_str().unwrap() == key {
+            return Some(v);
+        }
+    }
+    return None;
+}
 impl Handler for App {
     async fn notify(&self, nvim: &impl Nvimapi, notification: Notification) {
         log::trace!("notify");
-        let redraw = notification.into_redraw();
-        for event in redraw {
-            handle_uievent(self, nvim, event).await;
+        // let redraw = notification.into_redraw();
+        match notification {
+            Notification::Redraw(redraw) => redraw_notification(self, nvim,  redraw).await,
+            Notification::Unknown(unknown) => {
+                let name = unknown.0;
+                let args = unknown.1;
+                // some other tnvim ui has focused. Let it decide what should be ui size. Tell nvim
+                // you want same size.
+                if name == "tnvim.focused" {
+                    let Value::Array(args) = args else {unreachable!("send a single possibly nested object")};
+                    let args = args.into_iter().next().unwrap();
+                    let size = value_get(&args, "size").unwrap();
+                    let w= value_get(size, "width").unwrap().as_i64().unwrap();
+                    let h= value_get(size, "height").unwrap().as_i64().unwrap();
+                    // nvim.nr().ui_try_resize(w, h).unwrap();
+                }
+            },
         }
+
     }
 
     async fn request(&self, nvim: &impl Nvimapi, request: Box<Request>) {
@@ -21,27 +52,8 @@ impl Handler for App {
     async fn init(&self, nvim: &impl Nvimapi) {
         debug!("init");
         let (w,h) = self.terminal.size().unwrap();
-        nvim.nr().ui_attach(
-        // nvim.ui_attach(
-            w.into(),
-           h.into(),
-           Pairs::new().with_iter([
-               (UiOptions::Rgb, true),
-               (UiOptions::ExtLinegrid, true),
-               // (UiOptions::ExtMultigrid, true), //multigrid is broken. Doesn't send any info on
-               // reattach.
-               // (UiOptions::ExtCmdline, true),
-               // (UiOptions::ExtTabline, true),
-               // not sure what below ones do. Let's implement these for now,
-               // and see if it's enough.
-               // (UiOptions::ExtHlstate, true),
-               // (UiOptions::ExtWildmenu, true),
-               // (UiOptions::ExtMessages, true),
-               // (UiOptions::ExtTermcolors, true),
-               // (UiOptions::ExtPopupmenu, true),
-           ])
-        ).unwrap();
-        // ).await.unwrap();
+        self.nvimdata.borrow_mut().ui_size = data::Size { w, h };
+        crate::attach(nvim, w, h);
     }
 }
 

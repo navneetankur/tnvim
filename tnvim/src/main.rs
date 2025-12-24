@@ -27,7 +27,6 @@ fn start_nvim() {
 
 const LOG_FIFO: &str = "/home/navn/workspace/rust/tnvim/log.fifo";
 pub fn init_logger() {
-    // let fp = std::fs::File::create(LOG_FILE).unwrap();
     if let Err(e) = std::os::unix::fs::mkfifo(LOG_FIFO, std::fs::Permissions::from_mode(0o600)) {
         if e.kind() != std::io::ErrorKind::AlreadyExists { panic!("{e}") };
     }

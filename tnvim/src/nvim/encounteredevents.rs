@@ -3,13 +3,6 @@ use nvimapi::{Nvimapi, uievent};
 use rmpv::Value;
 use crate::app::App;
 
-pub(super) async fn do_mode_change(this: &App, nvim: &impl Nvimapi, mode_changes: Vec<uievent::ModeChange>) {
-    // mode (normal, insert) has changed.
-}
-pub(super) async fn do_mode_info_set(this: &App, nvim: &impl Nvimapi, mode_info_sets: Vec<uievent::ModeInfoSet>) {
-    // how should cursor look line in a particular mode.
-}
-//end of todo
 
 pub(super) async fn do_mouse_on(this: &App, nvim: &impl Nvimapi, mouse_ons: Vec<uievent::MouseOn>) {
     // mouse is on?. I think.
@@ -39,4 +32,8 @@ pub(super) async fn do_win_viewport(this: &App, nvim: &impl Nvimapi, events: Vec
     // like buffer line nos and scroll since last for smooth scrolling. I don't care about smooth
     // scrolling. But this event helps in keeping a map from grid to window. And I can ignore the
     // window not handeled by me.
+}
+pub(super) async fn do_win_pos(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::WinPos>) {
+    log::debug!("win_pos");
+    //pos of main/outer window.
 }

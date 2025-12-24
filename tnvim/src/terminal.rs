@@ -29,6 +29,10 @@ impl Terminal {
         self.stdout.borrow_mut().execute(crossterm::event::DisableMouseCapture)?;
         Ok((self))
     }
+    pub fn enable_focus_events(&self) -> Ret {
+        self.stdout.borrow_mut().execute(crossterm::event::EnableFocusChange)?;
+        Ok((self))
+    }
 
     pub fn move_cursor(&self, col: u16, row: u16) -> error::Result<&Self> {
         self.stdout.borrow_mut().queue(crossterm::cursor::MoveTo(col, row))?;
@@ -68,6 +72,30 @@ impl Terminal {
         }))?;
         Ok(self)
     }
+    pub(crate) fn set_cursor_shape(&self, cursor_shape: CursorShape) -> Ret<'_> {
+        use crossterm::cursor::SetCursorStyle;
+        let cursor_command = 
+            match cursor_shape {
+                CursorShape::Bar => SetCursorStyle::SteadyBar,
+                CursorShape::Block => SetCursorStyle::SteadyBlock,
+                CursorShape::UnderScore => SetCursorStyle::SteadyUnderScore,
+                CursorShape::BarBlink => SetCursorStyle::BlinkingBar,
+                CursorShape::BlockBlink => SetCursorStyle::BlinkingBlock,
+                CursorShape::UnderScoreBlink => SetCursorStyle::BlinkingUnderScore,
+            };
+        self.stdout.borrow_mut().queue(cursor_command)?;
+        return Ok(self);
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum CursorShape {
+    Bar,
+    Block,
+    UnderScore,
+    BarBlink,
+    BlockBlink,
+    UnderScoreBlink,
 }
 impl Default for Terminal {
     fn default() -> Self {
@@ -85,4 +113,8 @@ pub fn disable_raw_mode() {
 }
 pub fn disable_mouse_events() -> std::result::Result<(), std::io::Error> {
     stdout().execute(crossterm::event::DisableMouseCapture).map(|_|())
+}
+pub fn disable_focus_events() -> Result<(), std::io::Error> {
+    stdout().execute(crossterm::event::EnableFocusChange)?;
+    Ok(())
 }

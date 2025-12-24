@@ -12,6 +12,13 @@ mod nvim;
 mod term;
 use rustc_hash::FxHashMap as HashMap;
 
+fn attach(nvim: &impl Nvimapi,w: u16, h: u16) {
+    use nvimapi::NvimapiNr;
+    nvim.nr().ui_attach(w.into(), h.into(), nvimapi::Pairs::from_iter([
+        (nvimapi::UiOptions::ExtLinegrid, true),
+    ])).unwrap();
+}
+
 const TERM_INPUT_BUFFER_SIZE :usize = 5;
 
 // pub const SERVER: &str = "/run/user/1000/nvim-server-temp.s";
@@ -35,7 +42,7 @@ async fn main_async(rt: Rc<LocalRuntime>, app: App) {
 }
 
 fn start_nvim(app: Rc<App>, rt: Rc<LocalRuntime>) -> (impl Future, impl Nvimapi) {
-    let stream = UnixStream::connect(SERVER).unwrap();
+    let stream = UnixStream::connect(SERVER).expect(SERVER);
     let (task, nvim) = nvimapi::manager::start(app, rt, stream.try_clone().unwrap(), stream);
     return (task,nvim);
 }
@@ -50,7 +57,8 @@ pub fn exit() {
 fn before_exit() {
     terminal::leave_alternate_screen();
     terminal::disable_raw_mode();
-    terminal::disable_mouse_events();
+    let _ = terminal::disable_mouse_events();
+    let _ = terminal::disable_focus_events();
 }
 
 fn setup(term: &Terminal) {
@@ -59,6 +67,7 @@ fn setup(term: &Terminal) {
     term.enter_alternate_screen().unwrap();
     term.enable_raw_mode().unwrap();
     term.enable_mouse_events().unwrap();
+    term.enable_focus_events().unwrap();
 }
 
 fn set_panic_hook() {

@@ -2,7 +2,7 @@ use std::rc::Rc;
 use crate::terminal;
 use terminal::event::{KeyCode, KeyModifiers};
 use log::{debug, info, trace};
-use nvimapi::{Nvimapi, NvimapiNr};
+use nvimapi::{Nvimapi, NvimapiNr, Pairs, UiOptions};
 use tokio::sync::mpsc::{self, error::TrySendError};
 use crate::{TERM_INPUT_BUFFER_SIZE, app::App};
 
@@ -79,16 +79,34 @@ async fn on_paste(this: &App, nvim: &impl Nvimapi, paste: String) {
     todo!()
 }
 
-async fn on_resize(this: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
+async fn on_resize(app: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
+    let mut data = app.nvimdata.borrow_mut();
     nvim.nr().ui_try_resize(w.into(), h.into()).unwrap();
-    // todo send to nvim resize info.
+    data.ui_size.w = w;
+    data.ui_size.h = h;
+    drop(data);
 }
 
-async fn on_key(this: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
+async fn on_key(app: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
     use terminal::event::{KeyCode, KeyModifiers};
     trace!("on key: {key_event:?}");
-    if key_event.code == KeyCode::Char('c') && key_event.modifiers.contains(KeyModifiers::CONTROL) {
-        super::exit();
+    if key_event.modifiers.contains(KeyModifiers::CONTROL) {
+        match key_event.code {
+            KeyCode::Char('c') => super::exit(),
+            KeyCode::Char('r') => {
+                debug!("got ctrl a");
+                let data = app.nvimdata.borrow_mut();
+                let w = data.ui_size.w;
+                let h = data.ui_size.h;
+                let _: rmpv::Value = nvim.exec2(&format!("call rpcnotify(0, 'tnvim.focused', #{{ size: #{{width : {w}, height : {h} }} }})"), [0;0]).await.unwrap();
+                drop(data);
+            },
+            KeyCode::Char('a') => {
+                let size = app.nvimdata.borrow().ui_size.clone();
+                crate::attach(nvim, size.w, size.h);
+            },
+            _ => (),
+        };
     } else {
         if let Some(to_send) = to_nvim_input_key(key_event) {
             nvim.input(&to_send).await.unwrap();
@@ -96,12 +114,15 @@ async fn on_key(this: &App, nvim: &impl Nvimapi, key_event: terminal::event::Key
     }
 }
 
-async fn on_focus_lost(this: &App, nvim: &impl Nvimapi) {
-    todo!()
+async fn on_focus_lost(_: &App, nvim: &impl Nvimapi) {
+    nvim.nr().ui_set_focus(false).unwrap();
+    nvim.nr().ui_detach().unwrap();
 }
-
-async fn on_focus_gained(this: &App, nvim: &impl Nvimapi) {
-    todo!()
+async fn on_focus_gained(app: &App, nvim: &impl Nvimapi) {
+    nvim.nr().ui_set_focus(true).unwrap();
+    let size = app.nvimdata.borrow().ui_size.clone();
+    crate::attach(nvim, size.w, size.h);
+    // debug!("focus_gained");
 }
 
 fn to_nvim_input_key(key_event: terminal::event::KeyEvent) -> Option<String> {

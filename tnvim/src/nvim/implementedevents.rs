@@ -1,11 +1,12 @@
 use std::io::{Write, stdout};
 use log::{debug, trace};
-use nvimapi::{Nvimapi, Pairs, uievent};
+use nvimapi::{Nvimapi, Pairs, TryFromValue, uievent};
 use rmpv::Value;
 use serde::Deserialize;
 use suffixes::CastIt;
-use crate::{app::App, nvim::{MAIN_GRID, data::RgbAttrs}, };
+use crate::{app::App, nvim::{MAIN_GRID, data::{RgbAttrs}}, };
 use nvimapi::Color as NColor;
+use crate::terminal::CursorShape;
 
 
 
@@ -47,8 +48,8 @@ pub(super) async fn do_grid_resize(this: &App, _: &impl Nvimapi, events: Vec<uie
     let mut data = this.nvimdata.borrow_mut();
     let size = &events[0];
     assert_eq!(size.grid, 1);
-    data.size.w = size.width.u16();
-    data.size.h = size.height.u16();
+    data.nvim_size.w = size.width.u16();
+    data.nvim_size.h = size.height.u16();
     data.surface = grid::Grid::new(size.height.u(), size.width.u());
     drop(data);
 }
@@ -165,6 +166,60 @@ fn handle_scroll_row(app: &App, data: &mut std::cell::RefMut<'_, super::Data>, b
         app.terminal.print(cell.char_.encode_utf8(buffer)).unwrap();
     }
 }
+pub(super) async fn do_mode_change(app: &App, nvim: &impl Nvimapi, mode_changes: Vec<uievent::ModeChange>) {
+    debug!("{mode_changes:?}");
+    for mode in mode_changes {
+        let cursor_shape = app.nvimdata.borrow().mode_cursors[mode.mode_idx.u()];
+        debug!("{cursor_shape:?}");
+        app.terminal.set_cursor_shape(cursor_shape).unwrap();
+    }
+    // mode (normal, insert) has changed.
+}
+pub(super) async fn do_mode_info_set(app: &App, nvim: &impl Nvimapi, mode_info_sets: Vec<uievent::ModeInfoSet>) {
+    let json = serde_json::to_string(&mode_info_sets).unwrap();
+    debug!("{json}");
+    let mut mode_cursors = Vec::<CursorShape>::new();
+    for mode_info in mode_info_sets {
+        // I always assume that mode_info.enabled is true. Why would i not want cursor shaped.
+        for cursor_style in mode_info.cursor_styles {
+            // let Value::Map(cursor_style) = cursor_style else {unreachable!()};
+            let cursor_style = Pairs::<String, Value>::try_from_value(cursor_style).unwrap();
+            if let Some(cursor_shape) = cursor_style.get_for_key("cursor_shape") {
+                let cursor_shape = cursor_shape.as_str().unwrap();
+                let blink_on = cursor_style.get_for_key("blinkon").map(|v| v.as_i64().unwrap()).unwrap_or(0);
+                let blink_off = cursor_style.get_for_key("blinkoff").map(|v| v.as_i64().unwrap()).unwrap_or(0);
+                let blink_wait = cursor_style.get_for_key("blinkwait").map(|v| v.as_i64().unwrap()).unwrap_or(0);
+                let no_blink = (blink_on == 0 || blink_off == 0);
+                let shape = 
+                    match cursor_shape {
+                        "block" => {
+                            if no_blink {CursorShape::Block}
+                            else {CursorShape::BlockBlink}
+                        },
+                        "horizontal" => {
+                            if no_blink {CursorShape::UnderScore}
+                            else {CursorShape::UnderScoreBlink}
+                        },
+                        "vertical" => {
+                            if no_blink {CursorShape::Bar}
+                            else {CursorShape::BarBlink}
+                        },
+                        shape => {
+                            log::error!("cursor shape: {shape} unimplemented.");
+                            CursorShape::Block
+                        },
+                    };
+                mode_cursors.push(shape);
+            } else {
+                mode_cursors.push(CursorShape::Block);
+            }
+            // debug!("{cursor_shape:?}");
+
+        }
+    }
+    debug!("cshapes: {mode_cursors:?}");
+    app.nvimdata.borrow_mut().mode_cursors = mode_cursors;
+}
 // new idea.
 // even better.
 // On focus lost, get the current tabpage and save it.
@@ -176,10 +231,3 @@ fn handle_scroll_row(app: &App, data: &mut std::cell::RefMut<'_, super::Data>, b
 // Ignores otherwise. When a ui is focused it broadcasts it.
 // when focus comes back to a tnvim. It broadcast this info and then switches tabpage to it's own
 // and start listening to updates again.
-pub(super) async fn do_win_pos(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::WinPos>) {
-    //pos of main/outer window.
-    debug!("do win pos");
-    for event in events {
-        debug!("g:{}, w:{:?}, r: {}, c: {}, w:{}, h:{}", event.grid, event.win, event.startrow, event.startcol, event.width, event.height);
-    }
-}

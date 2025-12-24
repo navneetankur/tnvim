@@ -63,9 +63,13 @@ impl<K, V> Pairs<K, V>
 where 
     K: PartialEq
 {
-    pub fn get_for_key(&self, key: &K) -> Option<&V> {
+    pub fn get_for_key<Q>(&self, key: &Q) -> Option<&V>
+    where
+        K: core::borrow::Borrow<Q>,
+        Q: PartialEq + ?Sized,
+    {
         for (k,v) in self.iter() {
-            if k == key { return Some(v) }
+            if k.borrow() == key { return Some(v) }
         }
         return None;
     }

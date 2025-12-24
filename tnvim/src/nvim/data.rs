@@ -3,16 +3,19 @@ use nvimapi::Color;
 use serde::Deserialize;
 use suffixes::CastIt;
 use veci1::VecI1;
-use crate::{app::App, terminal::Terminal};
+use crate::{app::App, terminal::{CursorShape, Terminal}};
 
 #[derive(Default)]
 pub struct Data {
     pub color_set: ColorSet,
     pub hl_attrs: VecI1<RgbAttrs>,
     pub cursor: Cursor,
-    pub size: Size,
+    pub nvim_size: Size,
+    pub ui_size: Size,
     pub surface: grid::Grid<Cell>,
     pub current_hl_id: u16,
+    pub mode_cursors: Vec<CursorShape>,
+    pub ignore_mode: bool,
 }
 
 #[derive(Debug, Clone, Copy)]

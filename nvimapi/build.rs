@@ -224,13 +224,13 @@ use serde::{Deserialize, Serialize};
 type Boolean = bool;
 type Integer = i64;
 type Float = f64  ;
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(transparent)]
 pub struct Buffer(pub Value);
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(transparent)]
 pub struct Window(pub Value);
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(transparent)]
 pub struct Tabpage(pub Value);
 type Array  = Vec<Value>;
@@ -470,9 +470,9 @@ fn param_type_to_serde(type_: &str) -> &'static str {
         "Boolean"          => "Boolean",
         "Integer"          => "Integer",
         "Float"            => "Float",
-        "Buffer"           => "Buffer",
-        "Window"           => "Window",
-        "Tabpage"          => "Tabpage",
+        "Buffer"           => "&Buffer",
+        "Window"           => "&Window",
+        "Tabpage"          => "&Tabpage",
         "void"             => "()",
         "String"           => "&str",
         "Array"            => "impl Serialize",

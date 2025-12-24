@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 type Boolean = bool;
 type Integer = i64;
 type Float = f64;
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(transparent)]
 pub struct Buffer(pub Value);
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(transparent)]
 pub struct Window(pub Value);
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(transparent)]
 pub struct Tabpage(pub Value);
 type Array = Vec<Value>;
@@ -148,12 +148,12 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_exec_autocmds".into(), (event, opts))
             .await
     }
-    async fn buf_line_count(&self, buffer: Buffer) -> error::Result<Integer> {
+    async fn buf_line_count(&self, buffer: &Buffer) -> error::Result<Integer> {
         self.call_fn("nvim_buf_line_count".into(), (buffer,)).await
     }
     async fn buf_attach(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         send_buffer: Boolean,
         opts: impl Serialize,
     ) -> error::Result<Boolean> {
@@ -169,12 +169,12 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_buf_attach".into(), (buffer, send_buffer, opts))
             .await
     }
-    async fn buf_detach(&self, buffer: Buffer) -> error::Result<Boolean> {
+    async fn buf_detach(&self, buffer: &Buffer) -> error::Result<Boolean> {
         self.call_fn("nvim_buf_detach".into(), (buffer,)).await
     }
     async fn buf_get_lines(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         start: Integer,
         end: Integer,
         strict_indexing: Boolean,
@@ -187,7 +187,7 @@ pub trait Nvimapi {
     }
     async fn buf_set_lines(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         start: Integer,
         end: Integer,
         strict_indexing: Boolean,
@@ -201,7 +201,7 @@ pub trait Nvimapi {
     }
     async fn buf_set_text(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         start_row: Integer,
         start_col: Integer,
         end_row: Integer,
@@ -216,7 +216,7 @@ pub trait Nvimapi {
     }
     async fn buf_get_text(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         start_row: Integer,
         start_col: Integer,
         end_row: Integer,
@@ -244,13 +244,13 @@ pub trait Nvimapi {
         )
         .await
     }
-    async fn buf_get_offset(&self, buffer: Buffer, index: Integer) -> error::Result<Integer> {
+    async fn buf_get_offset(&self, buffer: &Buffer, index: Integer) -> error::Result<Integer> {
         self.call_fn("nvim_buf_get_offset".into(), (buffer, index))
             .await
     }
     async fn buf_get_var<D: Deserialize<'static>>(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         name: &str,
     ) -> error::Result<D> {
         self.call_fn("nvim_buf_get_var".into(), (buffer, name))
@@ -260,13 +260,13 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_buf_get_var".into(), (buffer, name))
             .await
     }
-    async fn buf_get_changedtick(&self, buffer: Buffer) -> error::Result<Integer> {
+    async fn buf_get_changedtick(&self, buffer: &Buffer) -> error::Result<Integer> {
         self.call_fn("nvim_buf_get_changedtick".into(), (buffer,))
             .await
     }
     async fn buf_get_keymap<D: Deserialize<'static>>(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         mode: &str,
     ) -> error::Result<D> {
         self.call_fn("nvim_buf_get_keymap".into(), (buffer, mode))
@@ -278,7 +278,7 @@ pub trait Nvimapi {
     }
     async fn buf_set_keymap(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         mode: &str,
         lhs: &str,
         rhs: &str,
@@ -298,13 +298,13 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_buf_set_keymap".into(), (buffer, mode, lhs, rhs, opts))
             .await
     }
-    async fn buf_del_keymap(&self, buffer: Buffer, mode: &str, lhs: &str) -> error::Result<()> {
+    async fn buf_del_keymap(&self, buffer: &Buffer, mode: &str, lhs: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_del_keymap".into(), (buffer, mode, lhs))
             .await
     }
     async fn buf_set_var(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         name: &str,
         value: impl Serialize,
     ) -> error::Result<()> {
@@ -320,37 +320,37 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_buf_set_var".into(), (buffer, name, value))
             .await
     }
-    async fn buf_del_var(&self, buffer: Buffer, name: &str) -> error::Result<()> {
+    async fn buf_del_var(&self, buffer: &Buffer, name: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_del_var".into(), (buffer, name))
             .await
     }
-    async fn buf_get_name(&self, buffer: Buffer) -> error::Result<String> {
+    async fn buf_get_name(&self, buffer: &Buffer) -> error::Result<String> {
         self.call_fn("nvim_buf_get_name".into(), (buffer,)).await
     }
-    async fn buf_set_name(&self, buffer: Buffer, name: &str) -> error::Result<()> {
+    async fn buf_set_name(&self, buffer: &Buffer, name: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_set_name".into(), (buffer, name))
             .await
     }
-    async fn buf_is_loaded(&self, buffer: Buffer) -> error::Result<Boolean> {
+    async fn buf_is_loaded(&self, buffer: &Buffer) -> error::Result<Boolean> {
         self.call_fn("nvim_buf_is_loaded".into(), (buffer,)).await
     }
-    async fn buf_delete(&self, buffer: Buffer, opts: impl Serialize) -> error::Result<()> {
+    async fn buf_delete(&self, buffer: &Buffer, opts: impl Serialize) -> error::Result<()> {
         self.call_fn("nvim_buf_delete".into(), (buffer, opts)).await
     }
     async fn buf_delete_wv(&self, buffer: Buffer, opts: Dict) -> error::Result<()> {
         self.call_fn_wv("nvim_buf_delete".into(), (buffer, opts))
             .await
     }
-    async fn buf_is_valid(&self, buffer: Buffer) -> error::Result<Boolean> {
+    async fn buf_is_valid(&self, buffer: &Buffer) -> error::Result<Boolean> {
         self.call_fn("nvim_buf_is_valid".into(), (buffer,)).await
     }
-    async fn buf_del_mark(&self, buffer: Buffer, name: &str) -> error::Result<Boolean> {
+    async fn buf_del_mark(&self, buffer: &Buffer, name: &str) -> error::Result<Boolean> {
         self.call_fn("nvim_buf_del_mark".into(), (buffer, name))
             .await
     }
     async fn buf_set_mark(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         name: &str,
         line: Integer,
         col: Integer,
@@ -370,7 +370,7 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_buf_set_mark".into(), (buffer, name, line, col, opts))
             .await
     }
-    async fn buf_get_mark(&self, buffer: Buffer, name: &str) -> error::Result<Vec<Integer>> {
+    async fn buf_get_mark(&self, buffer: &Buffer, name: &str) -> error::Result<Vec<Integer>> {
         self.call_fn("nvim_buf_get_mark".into(), (buffer, name))
             .await
     }
@@ -413,7 +413,7 @@ pub trait Nvimapi {
     }
     async fn buf_create_user_command(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         name: &str,
         command: impl Serialize,
         opts: impl Serialize,
@@ -437,7 +437,7 @@ pub trait Nvimapi {
         )
         .await
     }
-    async fn buf_del_user_command(&self, buffer: Buffer, name: &str) -> error::Result<()> {
+    async fn buf_del_user_command(&self, buffer: &Buffer, name: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_del_user_command".into(), (buffer, name))
             .await
     }
@@ -452,7 +452,7 @@ pub trait Nvimapi {
     }
     async fn buf_get_commands<D: Deserialize<'static>>(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         opts: impl Serialize,
     ) -> error::Result<D> {
         self.call_fn("nvim_buf_get_commands".into(), (buffer, opts))
@@ -473,7 +473,7 @@ pub trait Nvimapi {
     }
     async fn buf_get_extmark_by_id(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         ns_id: Integer,
         id: Integer,
         opts: impl Serialize,
@@ -499,7 +499,7 @@ pub trait Nvimapi {
     }
     async fn buf_get_extmarks<D: Deserialize<'static>>(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         ns_id: Integer,
         start: impl Serialize,
         end: impl Serialize,
@@ -527,7 +527,7 @@ pub trait Nvimapi {
     }
     async fn buf_set_extmark(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         ns_id: Integer,
         line: Integer,
         col: Integer,
@@ -555,7 +555,7 @@ pub trait Nvimapi {
     }
     async fn buf_del_extmark(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         ns_id: Integer,
         id: Integer,
     ) -> error::Result<Boolean> {
@@ -564,7 +564,7 @@ pub trait Nvimapi {
     }
     async fn buf_clear_namespace(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         ns_id: Integer,
         line_start: Integer,
         line_end: Integer,
@@ -637,13 +637,13 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_get_option_info2".into(), (name, opts))
             .await
     }
-    async fn tabpage_list_wins(&self, tabpage: Tabpage) -> error::Result<Vec<Window>> {
+    async fn tabpage_list_wins(&self, tabpage: &Tabpage) -> error::Result<Vec<Window>> {
         self.call_fn("nvim_tabpage_list_wins".into(), (tabpage,))
             .await
     }
     async fn tabpage_get_var<D: Deserialize<'static>>(
         &self,
-        tabpage: Tabpage,
+        tabpage: &Tabpage,
         name: &str,
     ) -> error::Result<D> {
         self.call_fn("nvim_tabpage_get_var".into(), (tabpage, name))
@@ -655,7 +655,7 @@ pub trait Nvimapi {
     }
     async fn tabpage_set_var(
         &self,
-        tabpage: Tabpage,
+        tabpage: &Tabpage,
         name: &str,
         value: impl Serialize,
     ) -> error::Result<()> {
@@ -671,23 +671,23 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_tabpage_set_var".into(), (tabpage, name, value))
             .await
     }
-    async fn tabpage_del_var(&self, tabpage: Tabpage, name: &str) -> error::Result<()> {
+    async fn tabpage_del_var(&self, tabpage: &Tabpage, name: &str) -> error::Result<()> {
         self.call_fn("nvim_tabpage_del_var".into(), (tabpage, name))
             .await
     }
-    async fn tabpage_get_win(&self, tabpage: Tabpage) -> error::Result<Window> {
+    async fn tabpage_get_win(&self, tabpage: &Tabpage) -> error::Result<Window> {
         self.call_fn("nvim_tabpage_get_win".into(), (tabpage,))
             .await
     }
-    async fn tabpage_set_win(&self, tabpage: Tabpage, win: Window) -> error::Result<()> {
+    async fn tabpage_set_win(&self, tabpage: &Tabpage, win: &Window) -> error::Result<()> {
         self.call_fn("nvim_tabpage_set_win".into(), (tabpage, win))
             .await
     }
-    async fn tabpage_get_number(&self, tabpage: Tabpage) -> error::Result<Integer> {
+    async fn tabpage_get_number(&self, tabpage: &Tabpage) -> error::Result<Integer> {
         self.call_fn("nvim_tabpage_get_number".into(), (tabpage,))
             .await
     }
-    async fn tabpage_is_valid(&self, tabpage: Tabpage) -> error::Result<Boolean> {
+    async fn tabpage_is_valid(&self, tabpage: &Tabpage) -> error::Result<Boolean> {
         self.call_fn("nvim_tabpage_is_valid".into(), (tabpage,))
             .await
     }
@@ -904,7 +904,7 @@ pub trait Nvimapi {
     async fn get_current_buf(&self) -> error::Result<Buffer> {
         self.call_fn("nvim_get_current_buf".into(), [(); 0]).await
     }
-    async fn set_current_buf(&self, buffer: Buffer) -> error::Result<()> {
+    async fn set_current_buf(&self, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_set_current_buf".into(), (buffer,)).await
     }
     async fn list_wins(&self) -> error::Result<Vec<Window>> {
@@ -913,14 +913,14 @@ pub trait Nvimapi {
     async fn get_current_win(&self) -> error::Result<Window> {
         self.call_fn("nvim_get_current_win".into(), [(); 0]).await
     }
-    async fn set_current_win(&self, window: Window) -> error::Result<()> {
+    async fn set_current_win(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_set_current_win".into(), (window,)).await
     }
     async fn create_buf(&self, listed: Boolean, scratch: Boolean) -> error::Result<Buffer> {
         self.call_fn("nvim_create_buf".into(), (listed, scratch))
             .await
     }
-    async fn open_term(&self, buffer: Buffer, opts: impl Serialize) -> error::Result<Integer> {
+    async fn open_term(&self, buffer: &Buffer, opts: impl Serialize) -> error::Result<Integer> {
         self.call_fn("nvim_open_term".into(), (buffer, opts)).await
     }
     async fn open_term_wv(&self, buffer: Buffer, opts: Dict) -> error::Result<Integer> {
@@ -937,7 +937,7 @@ pub trait Nvimapi {
         self.call_fn("nvim_get_current_tabpage".into(), [(); 0])
             .await
     }
-    async fn set_current_tabpage(&self, tabpage: Tabpage) -> error::Result<()> {
+    async fn set_current_tabpage(&self, tabpage: &Tabpage) -> error::Result<()> {
         self.call_fn("nvim_set_current_tabpage".into(), (tabpage,))
             .await
     }
@@ -1197,7 +1197,7 @@ pub trait Nvimapi {
     }
     async fn open_win(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         enter: Boolean,
         config: impl Serialize,
     ) -> error::Result<Window> {
@@ -1213,7 +1213,7 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_open_win".into(), (buffer, enter, config))
             .await
     }
-    async fn win_set_config(&self, window: Window, config: impl Serialize) -> error::Result<()> {
+    async fn win_set_config(&self, window: &Window, config: impl Serialize) -> error::Result<()> {
         self.call_fn("nvim_win_set_config".into(), (window, config))
             .await
     }
@@ -1221,44 +1221,44 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_win_set_config".into(), (window, config))
             .await
     }
-    async fn win_get_config<D: Deserialize<'static>>(&self, window: Window) -> error::Result<D> {
+    async fn win_get_config<D: Deserialize<'static>>(&self, window: &Window) -> error::Result<D> {
         self.call_fn("nvim_win_get_config".into(), (window,)).await
     }
     async fn win_get_config_wv(&self, window: Window) -> error::Result<Dict> {
         self.call_fn_wv("nvim_win_get_config".into(), (window,))
             .await
     }
-    async fn win_get_buf(&self, window: Window) -> error::Result<Buffer> {
+    async fn win_get_buf(&self, window: &Window) -> error::Result<Buffer> {
         self.call_fn("nvim_win_get_buf".into(), (window,)).await
     }
-    async fn win_set_buf(&self, window: Window, buffer: Buffer) -> error::Result<()> {
+    async fn win_set_buf(&self, window: &Window, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_win_set_buf".into(), (window, buffer))
             .await
     }
-    async fn win_get_cursor(&self, window: Window) -> error::Result<Vec<Integer>> {
+    async fn win_get_cursor(&self, window: &Window) -> error::Result<Vec<Integer>> {
         self.call_fn("nvim_win_get_cursor".into(), (window,)).await
     }
-    async fn win_set_cursor(&self, window: Window, pos: &[Integer]) -> error::Result<()> {
+    async fn win_set_cursor(&self, window: &Window, pos: &[Integer]) -> error::Result<()> {
         self.call_fn("nvim_win_set_cursor".into(), (window, pos))
             .await
     }
-    async fn win_get_height(&self, window: Window) -> error::Result<Integer> {
+    async fn win_get_height(&self, window: &Window) -> error::Result<Integer> {
         self.call_fn("nvim_win_get_height".into(), (window,)).await
     }
-    async fn win_set_height(&self, window: Window, height: Integer) -> error::Result<()> {
+    async fn win_set_height(&self, window: &Window, height: Integer) -> error::Result<()> {
         self.call_fn("nvim_win_set_height".into(), (window, height))
             .await
     }
-    async fn win_get_width(&self, window: Window) -> error::Result<Integer> {
+    async fn win_get_width(&self, window: &Window) -> error::Result<Integer> {
         self.call_fn("nvim_win_get_width".into(), (window,)).await
     }
-    async fn win_set_width(&self, window: Window, width: Integer) -> error::Result<()> {
+    async fn win_set_width(&self, window: &Window, width: Integer) -> error::Result<()> {
         self.call_fn("nvim_win_set_width".into(), (window, width))
             .await
     }
     async fn win_get_var<D: Deserialize<'static>>(
         &self,
-        window: Window,
+        window: &Window,
         name: &str,
     ) -> error::Result<D> {
         self.call_fn("nvim_win_get_var".into(), (window, name))
@@ -1270,7 +1270,7 @@ pub trait Nvimapi {
     }
     async fn win_set_var(
         &self,
-        window: Window,
+        window: &Window,
         name: &str,
         value: impl Serialize,
     ) -> error::Result<()> {
@@ -1286,36 +1286,36 @@ pub trait Nvimapi {
         self.call_fn_wv("nvim_win_set_var".into(), (window, name, value))
             .await
     }
-    async fn win_del_var(&self, window: Window, name: &str) -> error::Result<()> {
+    async fn win_del_var(&self, window: &Window, name: &str) -> error::Result<()> {
         self.call_fn("nvim_win_del_var".into(), (window, name))
             .await
     }
-    async fn win_get_position(&self, window: Window) -> error::Result<Vec<Integer>> {
+    async fn win_get_position(&self, window: &Window) -> error::Result<Vec<Integer>> {
         self.call_fn("nvim_win_get_position".into(), (window,))
             .await
     }
-    async fn win_get_tabpage(&self, window: Window) -> error::Result<Tabpage> {
+    async fn win_get_tabpage(&self, window: &Window) -> error::Result<Tabpage> {
         self.call_fn("nvim_win_get_tabpage".into(), (window,)).await
     }
-    async fn win_get_number(&self, window: Window) -> error::Result<Integer> {
+    async fn win_get_number(&self, window: &Window) -> error::Result<Integer> {
         self.call_fn("nvim_win_get_number".into(), (window,)).await
     }
-    async fn win_is_valid(&self, window: Window) -> error::Result<Boolean> {
+    async fn win_is_valid(&self, window: &Window) -> error::Result<Boolean> {
         self.call_fn("nvim_win_is_valid".into(), (window,)).await
     }
-    async fn win_hide(&self, window: Window) -> error::Result<()> {
+    async fn win_hide(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_hide".into(), (window,)).await
     }
-    async fn win_close(&self, window: Window, force: Boolean) -> error::Result<()> {
+    async fn win_close(&self, window: &Window, force: Boolean) -> error::Result<()> {
         self.call_fn("nvim_win_close".into(), (window, force)).await
     }
-    async fn win_set_hl_ns(&self, window: Window, ns_id: Integer) -> error::Result<()> {
+    async fn win_set_hl_ns(&self, window: &Window, ns_id: Integer) -> error::Result<()> {
         self.call_fn("nvim_win_set_hl_ns".into(), (window, ns_id))
             .await
     }
     async fn win_text_height<D: Deserialize<'static>>(
         &self,
-        window: Window,
+        window: &Window,
         opts: impl Serialize,
     ) -> error::Result<D> {
         self.call_fn("nvim_win_text_height".into(), (window, opts))
@@ -1374,12 +1374,12 @@ pub trait NvimapiNr {
     fn exec_autocmds_wv(&self, event: Object, opts: Dict) -> error::Result<()> {
         self.call_fn_wv("nvim_exec_autocmds".into(), (event, opts))
     }
-    fn buf_line_count(&self, buffer: Buffer) -> error::Result<()> {
+    fn buf_line_count(&self, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_buf_line_count".into(), (buffer,))
     }
     fn buf_attach(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         send_buffer: Boolean,
         opts: impl Serialize,
     ) -> error::Result<()> {
@@ -1388,12 +1388,12 @@ pub trait NvimapiNr {
     fn buf_attach_wv(&self, buffer: Buffer, send_buffer: Boolean, opts: Dict) -> error::Result<()> {
         self.call_fn_wv("nvim_buf_attach".into(), (buffer, send_buffer, opts))
     }
-    fn buf_detach(&self, buffer: Buffer) -> error::Result<()> {
+    fn buf_detach(&self, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_buf_detach".into(), (buffer,))
     }
     fn buf_get_lines(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         start: Integer,
         end: Integer,
         strict_indexing: Boolean,
@@ -1405,7 +1405,7 @@ pub trait NvimapiNr {
     }
     fn buf_set_lines(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         start: Integer,
         end: Integer,
         strict_indexing: Boolean,
@@ -1418,7 +1418,7 @@ pub trait NvimapiNr {
     }
     fn buf_set_text(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         start_row: Integer,
         start_col: Integer,
         end_row: Integer,
@@ -1432,7 +1432,7 @@ pub trait NvimapiNr {
     }
     fn buf_get_text(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         start_row: Integer,
         start_col: Integer,
         end_row: Integer,
@@ -1458,21 +1458,21 @@ pub trait NvimapiNr {
             (buffer, start_row, start_col, end_row, end_col, opts),
         )
     }
-    fn buf_get_offset(&self, buffer: Buffer, index: Integer) -> error::Result<()> {
+    fn buf_get_offset(&self, buffer: &Buffer, index: Integer) -> error::Result<()> {
         self.call_fn("nvim_buf_get_offset".into(), (buffer, index))
     }
-    fn buf_get_var(&self, buffer: Buffer, name: &str) -> error::Result<()> {
+    fn buf_get_var(&self, buffer: &Buffer, name: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_get_var".into(), (buffer, name))
     }
-    fn buf_get_changedtick(&self, buffer: Buffer) -> error::Result<()> {
+    fn buf_get_changedtick(&self, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_buf_get_changedtick".into(), (buffer,))
     }
-    fn buf_get_keymap(&self, buffer: Buffer, mode: &str) -> error::Result<()> {
+    fn buf_get_keymap(&self, buffer: &Buffer, mode: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_get_keymap".into(), (buffer, mode))
     }
     fn buf_set_keymap(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         mode: &str,
         lhs: &str,
         rhs: &str,
@@ -1490,42 +1490,42 @@ pub trait NvimapiNr {
     ) -> error::Result<()> {
         self.call_fn_wv("nvim_buf_set_keymap".into(), (buffer, mode, lhs, rhs, opts))
     }
-    fn buf_del_keymap(&self, buffer: Buffer, mode: &str, lhs: &str) -> error::Result<()> {
+    fn buf_del_keymap(&self, buffer: &Buffer, mode: &str, lhs: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_del_keymap".into(), (buffer, mode, lhs))
     }
-    fn buf_set_var(&self, buffer: Buffer, name: &str, value: impl Serialize) -> error::Result<()> {
+    fn buf_set_var(&self, buffer: &Buffer, name: &str, value: impl Serialize) -> error::Result<()> {
         self.call_fn("nvim_buf_set_var".into(), (buffer, name, value))
     }
     fn buf_set_var_wv(&self, buffer: Buffer, name: String, value: Object) -> error::Result<()> {
         self.call_fn_wv("nvim_buf_set_var".into(), (buffer, name, value))
     }
-    fn buf_del_var(&self, buffer: Buffer, name: &str) -> error::Result<()> {
+    fn buf_del_var(&self, buffer: &Buffer, name: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_del_var".into(), (buffer, name))
     }
-    fn buf_get_name(&self, buffer: Buffer) -> error::Result<()> {
+    fn buf_get_name(&self, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_buf_get_name".into(), (buffer,))
     }
-    fn buf_set_name(&self, buffer: Buffer, name: &str) -> error::Result<()> {
+    fn buf_set_name(&self, buffer: &Buffer, name: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_set_name".into(), (buffer, name))
     }
-    fn buf_is_loaded(&self, buffer: Buffer) -> error::Result<()> {
+    fn buf_is_loaded(&self, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_buf_is_loaded".into(), (buffer,))
     }
-    fn buf_delete(&self, buffer: Buffer, opts: impl Serialize) -> error::Result<()> {
+    fn buf_delete(&self, buffer: &Buffer, opts: impl Serialize) -> error::Result<()> {
         self.call_fn("nvim_buf_delete".into(), (buffer, opts))
     }
     fn buf_delete_wv(&self, buffer: Buffer, opts: Dict) -> error::Result<()> {
         self.call_fn_wv("nvim_buf_delete".into(), (buffer, opts))
     }
-    fn buf_is_valid(&self, buffer: Buffer) -> error::Result<()> {
+    fn buf_is_valid(&self, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_buf_is_valid".into(), (buffer,))
     }
-    fn buf_del_mark(&self, buffer: Buffer, name: &str) -> error::Result<()> {
+    fn buf_del_mark(&self, buffer: &Buffer, name: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_del_mark".into(), (buffer, name))
     }
     fn buf_set_mark(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         name: &str,
         line: Integer,
         col: Integer,
@@ -1543,7 +1543,7 @@ pub trait NvimapiNr {
     ) -> error::Result<()> {
         self.call_fn_wv("nvim_buf_set_mark".into(), (buffer, name, line, col, opts))
     }
-    fn buf_get_mark(&self, buffer: Buffer, name: &str) -> error::Result<()> {
+    fn buf_get_mark(&self, buffer: &Buffer, name: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_get_mark".into(), (buffer, name))
     }
     fn parse_cmd(&self, str: &str, opts: impl Serialize) -> error::Result<()> {
@@ -1579,7 +1579,7 @@ pub trait NvimapiNr {
     }
     fn buf_create_user_command(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         name: &str,
         command: impl Serialize,
         opts: impl Serialize,
@@ -1601,7 +1601,7 @@ pub trait NvimapiNr {
             (buffer, name, command, opts),
         )
     }
-    fn buf_del_user_command(&self, buffer: Buffer, name: &str) -> error::Result<()> {
+    fn buf_del_user_command(&self, buffer: &Buffer, name: &str) -> error::Result<()> {
         self.call_fn("nvim_buf_del_user_command".into(), (buffer, name))
     }
     fn get_commands(&self, opts: impl Serialize) -> error::Result<()> {
@@ -1610,7 +1610,7 @@ pub trait NvimapiNr {
     fn get_commands_wv(&self, opts: Dict) -> error::Result<()> {
         self.call_fn_wv("nvim_get_commands".into(), (opts,))
     }
-    fn buf_get_commands(&self, buffer: Buffer, opts: impl Serialize) -> error::Result<()> {
+    fn buf_get_commands(&self, buffer: &Buffer, opts: impl Serialize) -> error::Result<()> {
         self.call_fn("nvim_buf_get_commands".into(), (buffer, opts))
     }
     fn buf_get_commands_wv(&self, buffer: Buffer, opts: Dict) -> error::Result<()> {
@@ -1624,7 +1624,7 @@ pub trait NvimapiNr {
     }
     fn buf_get_extmark_by_id(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         ns_id: Integer,
         id: Integer,
         opts: impl Serialize,
@@ -1648,7 +1648,7 @@ pub trait NvimapiNr {
     }
     fn buf_get_extmarks(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         ns_id: Integer,
         start: impl Serialize,
         end: impl Serialize,
@@ -1674,7 +1674,7 @@ pub trait NvimapiNr {
     }
     fn buf_set_extmark(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         ns_id: Integer,
         line: Integer,
         col: Integer,
@@ -1698,12 +1698,12 @@ pub trait NvimapiNr {
             (buffer, ns_id, line, col, opts),
         )
     }
-    fn buf_del_extmark(&self, buffer: Buffer, ns_id: Integer, id: Integer) -> error::Result<()> {
+    fn buf_del_extmark(&self, buffer: &Buffer, ns_id: Integer, id: Integer) -> error::Result<()> {
         self.call_fn("nvim_buf_del_extmark".into(), (buffer, ns_id, id))
     }
     fn buf_clear_namespace(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         ns_id: Integer,
         line_start: Integer,
         line_end: Integer,
@@ -1745,15 +1745,15 @@ pub trait NvimapiNr {
     fn get_option_info2_wv(&self, name: String, opts: Dict) -> error::Result<()> {
         self.call_fn_wv("nvim_get_option_info2".into(), (name, opts))
     }
-    fn tabpage_list_wins(&self, tabpage: Tabpage) -> error::Result<()> {
+    fn tabpage_list_wins(&self, tabpage: &Tabpage) -> error::Result<()> {
         self.call_fn("nvim_tabpage_list_wins".into(), (tabpage,))
     }
-    fn tabpage_get_var(&self, tabpage: Tabpage, name: &str) -> error::Result<()> {
+    fn tabpage_get_var(&self, tabpage: &Tabpage, name: &str) -> error::Result<()> {
         self.call_fn("nvim_tabpage_get_var".into(), (tabpage, name))
     }
     fn tabpage_set_var(
         &self,
-        tabpage: Tabpage,
+        tabpage: &Tabpage,
         name: &str,
         value: impl Serialize,
     ) -> error::Result<()> {
@@ -1767,19 +1767,19 @@ pub trait NvimapiNr {
     ) -> error::Result<()> {
         self.call_fn_wv("nvim_tabpage_set_var".into(), (tabpage, name, value))
     }
-    fn tabpage_del_var(&self, tabpage: Tabpage, name: &str) -> error::Result<()> {
+    fn tabpage_del_var(&self, tabpage: &Tabpage, name: &str) -> error::Result<()> {
         self.call_fn("nvim_tabpage_del_var".into(), (tabpage, name))
     }
-    fn tabpage_get_win(&self, tabpage: Tabpage) -> error::Result<()> {
+    fn tabpage_get_win(&self, tabpage: &Tabpage) -> error::Result<()> {
         self.call_fn("nvim_tabpage_get_win".into(), (tabpage,))
     }
-    fn tabpage_set_win(&self, tabpage: Tabpage, win: Window) -> error::Result<()> {
+    fn tabpage_set_win(&self, tabpage: &Tabpage, win: &Window) -> error::Result<()> {
         self.call_fn("nvim_tabpage_set_win".into(), (tabpage, win))
     }
-    fn tabpage_get_number(&self, tabpage: Tabpage) -> error::Result<()> {
+    fn tabpage_get_number(&self, tabpage: &Tabpage) -> error::Result<()> {
         self.call_fn("nvim_tabpage_get_number".into(), (tabpage,))
     }
-    fn tabpage_is_valid(&self, tabpage: Tabpage) -> error::Result<()> {
+    fn tabpage_is_valid(&self, tabpage: &Tabpage) -> error::Result<()> {
         self.call_fn("nvim_tabpage_is_valid".into(), (tabpage,))
     }
     fn ui_attach(
@@ -1958,7 +1958,7 @@ pub trait NvimapiNr {
     fn get_current_buf(&self) -> error::Result<()> {
         self.call_fn("nvim_get_current_buf".into(), [(); 0])
     }
-    fn set_current_buf(&self, buffer: Buffer) -> error::Result<()> {
+    fn set_current_buf(&self, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_set_current_buf".into(), (buffer,))
     }
     fn list_wins(&self) -> error::Result<()> {
@@ -1967,13 +1967,13 @@ pub trait NvimapiNr {
     fn get_current_win(&self) -> error::Result<()> {
         self.call_fn("nvim_get_current_win".into(), [(); 0])
     }
-    fn set_current_win(&self, window: Window) -> error::Result<()> {
+    fn set_current_win(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_set_current_win".into(), (window,))
     }
     fn create_buf(&self, listed: Boolean, scratch: Boolean) -> error::Result<()> {
         self.call_fn("nvim_create_buf".into(), (listed, scratch))
     }
-    fn open_term(&self, buffer: Buffer, opts: impl Serialize) -> error::Result<()> {
+    fn open_term(&self, buffer: &Buffer, opts: impl Serialize) -> error::Result<()> {
         self.call_fn("nvim_open_term".into(), (buffer, opts))
     }
     fn open_term_wv(&self, buffer: Buffer, opts: Dict) -> error::Result<()> {
@@ -1988,7 +1988,7 @@ pub trait NvimapiNr {
     fn get_current_tabpage(&self) -> error::Result<()> {
         self.call_fn("nvim_get_current_tabpage".into(), [(); 0])
     }
-    fn set_current_tabpage(&self, tabpage: Tabpage) -> error::Result<()> {
+    fn set_current_tabpage(&self, tabpage: &Tabpage) -> error::Result<()> {
         self.call_fn("nvim_set_current_tabpage".into(), (tabpage,))
     }
     fn paste(&self, data: &str, crlf: Boolean, phase: Integer) -> error::Result<()> {
@@ -2165,7 +2165,7 @@ pub trait NvimapiNr {
     }
     fn open_win(
         &self,
-        buffer: Buffer,
+        buffer: &Buffer,
         enter: Boolean,
         config: impl Serialize,
     ) -> error::Result<()> {
@@ -2174,73 +2174,73 @@ pub trait NvimapiNr {
     fn open_win_wv(&self, buffer: Buffer, enter: Boolean, config: Dict) -> error::Result<()> {
         self.call_fn_wv("nvim_open_win".into(), (buffer, enter, config))
     }
-    fn win_set_config(&self, window: Window, config: impl Serialize) -> error::Result<()> {
+    fn win_set_config(&self, window: &Window, config: impl Serialize) -> error::Result<()> {
         self.call_fn("nvim_win_set_config".into(), (window, config))
     }
     fn win_set_config_wv(&self, window: Window, config: Dict) -> error::Result<()> {
         self.call_fn_wv("nvim_win_set_config".into(), (window, config))
     }
-    fn win_get_config(&self, window: Window) -> error::Result<()> {
+    fn win_get_config(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_get_config".into(), (window,))
     }
-    fn win_get_buf(&self, window: Window) -> error::Result<()> {
+    fn win_get_buf(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_get_buf".into(), (window,))
     }
-    fn win_set_buf(&self, window: Window, buffer: Buffer) -> error::Result<()> {
+    fn win_set_buf(&self, window: &Window, buffer: &Buffer) -> error::Result<()> {
         self.call_fn("nvim_win_set_buf".into(), (window, buffer))
     }
-    fn win_get_cursor(&self, window: Window) -> error::Result<()> {
+    fn win_get_cursor(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_get_cursor".into(), (window,))
     }
-    fn win_set_cursor(&self, window: Window, pos: &[Integer]) -> error::Result<()> {
+    fn win_set_cursor(&self, window: &Window, pos: &[Integer]) -> error::Result<()> {
         self.call_fn("nvim_win_set_cursor".into(), (window, pos))
     }
-    fn win_get_height(&self, window: Window) -> error::Result<()> {
+    fn win_get_height(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_get_height".into(), (window,))
     }
-    fn win_set_height(&self, window: Window, height: Integer) -> error::Result<()> {
+    fn win_set_height(&self, window: &Window, height: Integer) -> error::Result<()> {
         self.call_fn("nvim_win_set_height".into(), (window, height))
     }
-    fn win_get_width(&self, window: Window) -> error::Result<()> {
+    fn win_get_width(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_get_width".into(), (window,))
     }
-    fn win_set_width(&self, window: Window, width: Integer) -> error::Result<()> {
+    fn win_set_width(&self, window: &Window, width: Integer) -> error::Result<()> {
         self.call_fn("nvim_win_set_width".into(), (window, width))
     }
-    fn win_get_var(&self, window: Window, name: &str) -> error::Result<()> {
+    fn win_get_var(&self, window: &Window, name: &str) -> error::Result<()> {
         self.call_fn("nvim_win_get_var".into(), (window, name))
     }
-    fn win_set_var(&self, window: Window, name: &str, value: impl Serialize) -> error::Result<()> {
+    fn win_set_var(&self, window: &Window, name: &str, value: impl Serialize) -> error::Result<()> {
         self.call_fn("nvim_win_set_var".into(), (window, name, value))
     }
     fn win_set_var_wv(&self, window: Window, name: String, value: Object) -> error::Result<()> {
         self.call_fn_wv("nvim_win_set_var".into(), (window, name, value))
     }
-    fn win_del_var(&self, window: Window, name: &str) -> error::Result<()> {
+    fn win_del_var(&self, window: &Window, name: &str) -> error::Result<()> {
         self.call_fn("nvim_win_del_var".into(), (window, name))
     }
-    fn win_get_position(&self, window: Window) -> error::Result<()> {
+    fn win_get_position(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_get_position".into(), (window,))
     }
-    fn win_get_tabpage(&self, window: Window) -> error::Result<()> {
+    fn win_get_tabpage(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_get_tabpage".into(), (window,))
     }
-    fn win_get_number(&self, window: Window) -> error::Result<()> {
+    fn win_get_number(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_get_number".into(), (window,))
     }
-    fn win_is_valid(&self, window: Window) -> error::Result<()> {
+    fn win_is_valid(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_is_valid".into(), (window,))
     }
-    fn win_hide(&self, window: Window) -> error::Result<()> {
+    fn win_hide(&self, window: &Window) -> error::Result<()> {
         self.call_fn("nvim_win_hide".into(), (window,))
     }
-    fn win_close(&self, window: Window, force: Boolean) -> error::Result<()> {
+    fn win_close(&self, window: &Window, force: Boolean) -> error::Result<()> {
         self.call_fn("nvim_win_close".into(), (window, force))
     }
-    fn win_set_hl_ns(&self, window: Window, ns_id: Integer) -> error::Result<()> {
+    fn win_set_hl_ns(&self, window: &Window, ns_id: Integer) -> error::Result<()> {
         self.call_fn("nvim_win_set_hl_ns".into(), (window, ns_id))
     }
-    fn win_text_height(&self, window: Window, opts: impl Serialize) -> error::Result<()> {
+    fn win_text_height(&self, window: &Window, opts: impl Serialize) -> error::Result<()> {
         self.call_fn("nvim_win_text_height".into(), (window, opts))
     }
     fn win_text_height_wv(&self, window: Window, opts: Dict) -> error::Result<()> {

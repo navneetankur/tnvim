@@ -123,10 +123,14 @@ async fn on_focus_lost(app: &App, nvim: &impl Nvimapi) {
 async fn on_focus_gained(app: &App, nvim: &impl Nvimapi) {
     nvim.nr().ui_set_focus(true).unwrap();
     let size = app.nvimdata.borrow().ui_size.clone();
-    if let Some(my_tab) = app.nvimdata.borrow().my_tab.as_ref() {
-
-    }
     crate::attach(nvim, size.w, size.h);
+    let my_tab = app.nvimdata.borrow().my_tab.clone();
+    if let Some(my_tab) = my_tab {
+        // some delay, so that the other ui which lost focus, can save it's current tab before I
+        // change it.
+        tokio::time::sleep(core::time::Duration::from_millis(10)).await;
+        nvim.nr().set_current_tabpage(&my_tab).unwrap();
+    }
     // debug!("focus_gained");
 }
 

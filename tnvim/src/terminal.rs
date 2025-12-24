@@ -86,6 +86,10 @@ impl Terminal {
         self.stdout.borrow_mut().queue(cursor_command)?;
         return Ok(self);
     }
+    pub(crate) fn enable_bracketed_paste(&self) -> Ret<'_> {
+        self.stdout.borrow_mut().execute(crossterm::event::EnableBracketedPaste)?;
+        return Ok(self);
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -110,6 +114,9 @@ pub fn leave_alternate_screen() {
 }
 pub fn disable_raw_mode() {
     crossterm::terminal::disable_raw_mode().unwrap();
+}
+pub fn disable_bracketed_paste() -> std::result::Result<(), std::io::Error> {
+    stdout().execute(crossterm::event::DisableBracketedPaste).map(|_|())
 }
 pub fn disable_mouse_events() -> std::result::Result<(), std::io::Error> {
     stdout().execute(crossterm::event::DisableMouseCapture).map(|_|())

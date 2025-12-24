@@ -2,30 +2,15 @@
 
 use std::os::unix::fs::{OpenOptionsExt as _, PermissionsExt as _};
 fn main() {
-    // color_eyre::install().unwrap();
-    // env_logger::Builder::new()
-    //     .filter_level(log::LevelFilter::Debug)
-    //     .format_source_path(true)
-    //     .format_target(false)
-    //     .format_timestamp(None)
-    //     .format_level(false)
-    //     .init();
-    init_logger();
-    log_panics::init();
-    // start_nvim();
+    #[cfg(debug_assertions)]
+    {
+        init_logger();
+        log_panics::init();
+    }
     tnvim::main();
 }
 
-fn start_nvim() {
-    use tnvim::SERVER;
-    use std::fs;
-    let _ = fs::remove_file(SERVER);
-    std::process::Command::new("nvim")
-        .args(["--listen", SERVER, "--headless"])
-        .spawn().unwrap();
-}
-
-const LOG_FIFO: &str = "/home/navn/workspace/rust/tnvim/log.fifo";
+const LOG_FIFO: &str = "/tmp/tnvim.log.fifo";
 pub fn init_logger() {
     if let Err(e) = std::os::unix::fs::mkfifo(LOG_FIFO, std::fs::Permissions::from_mode(0o600)) {
         if e.kind() != std::io::ErrorKind::AlreadyExists { panic!("{e}") };

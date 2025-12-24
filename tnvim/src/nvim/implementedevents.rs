@@ -169,9 +169,9 @@ fn handle_scroll_row(app: &App, data: &mut std::cell::RefMut<'_, super::Data>, b
 pub(super) async fn do_mode_change(app: &App, nvim: &impl Nvimapi, mode_changes: Vec<uievent::ModeChange>) {
     // debug!("{mode_changes:?}");
     for mode in mode_changes {
-        let cursor_shape = app.nvimdata.borrow().mode_cursors[mode.mode_idx.u()];
-        // debug!("{cursor_shape:?}");
-        app.terminal.set_cursor_shape(cursor_shape).unwrap();
+        if let Some(cursor_shape) = app.nvimdata.borrow().mode_cursors.get(mode.mode_idx.u()) {
+            app.terminal.set_cursor_shape(*cursor_shape).unwrap();
+        }
     }
     // mode (normal, insert) has changed.
 }

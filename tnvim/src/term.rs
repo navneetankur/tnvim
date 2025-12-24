@@ -75,8 +75,9 @@ async fn on_mouse(app: &App, nvim: &impl Nvimapi, mouse_event: terminal::event::
     }
 }
 
-async fn on_paste(this: &App, nvim: &impl Nvimapi, paste: String) {
-    todo!()
+async fn on_paste(_: &App, nvim: &impl Nvimapi, paste: String) {
+    debug!("paste: {paste}");
+    nvim.nr().paste(&paste, true, -1).unwrap();
 }
 
 async fn on_resize(app: &App, nvim: &impl Nvimapi, w: u16, h: u16) {

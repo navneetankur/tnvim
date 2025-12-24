@@ -1,7 +1,7 @@
 mod data;
 pub use data::Data;
 use log::{debug, warn};
-use nvimapi::{Handler, Notification, Nvimapi, NvimapiNr, Pairs, Request, TryFromValue, UiEvent, UiOptions, uievent};
+use nvimapi::{Handler, Notification, Nvimapi, Request, UiEvent};
 use rmpv::Value;
 use crate::app::App;
 pub const MAIN_GRID: u8 = 1;
@@ -19,7 +19,7 @@ fn value_get<'v>(map: &'v Value, key: &str) -> Option<&'v Value> {
             return Some(v);
         }
     }
-    return None;
+    None
 }
 impl Handler for App {
     async fn notify(&self, nvim: &impl Nvimapi, notification: Notification) {
@@ -36,8 +36,8 @@ impl Handler for App {
                     let Value::Array(args) = args else {unreachable!("send a single possibly nested object")};
                     let args = args.into_iter().next().unwrap();
                     let size = value_get(&args, "size").unwrap();
-                    let w= value_get(size, "width").unwrap().as_i64().unwrap();
-                    let h= value_get(size, "height").unwrap().as_i64().unwrap();
+                    let _w= value_get(size, "width").unwrap().as_i64().unwrap();
+                    let _h= value_get(size, "height").unwrap().as_i64().unwrap();
                     // nvim.nr().ui_try_resize(w, h).unwrap();
                 }
             },
@@ -45,7 +45,7 @@ impl Handler for App {
 
     }
 
-    async fn request(&self, nvim: &impl Nvimapi, request: Box<Request>) {
+    async fn request(&self, _nvim: &impl Nvimapi, _request: Box<Request>) {
         debug!("request");
     }
 

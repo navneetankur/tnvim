@@ -7,10 +7,7 @@ mod manualser;
 pub use manualser::{color::Color};
 mod contseq;
 mod pairs;
-use log::debug;
 pub use pairs::Pairs;
-use tokio::runtime::LocalRuntime;
-use std::rc::Rc;
 use rmpv::Value;
 mod generated;
 mod nvimapi;
@@ -58,68 +55,7 @@ impl MsgToReader {
         Self::PendingRequest(PendingRequest { msg_id, sender })
     }
 }
-struct PendingRequest {
+pub struct PendingRequest {
     msg_id: u32,
     sender: tokio::sync::oneshot::Sender<core::result::Result<Value, Value>>,
-}
-
-struct TestH;
-impl Handler for TestH {
-    async fn notify(&self, _nvim: &impl Nvimapi, notification: nvimapi::notification::Notification) {
-        match notification {
-            nvimapi::notification::Notification::Redraw(ui_events) => {
-                for event in ui_events {
-                    debug!("got {}", event.name());
-                }
-            },
-            nvimapi::notification::Notification::Unknown(_) => todo!(),
-        }
-    }
-
-    async fn request(&self, _nvim: &impl Nvimapi, request: Box<msgrpc::Request>) {
-        debug!("request: {request:?}");
-    }
-
-    async fn init(&self, nvim: &impl Nvimapi) {
-        use nvimapi::NvimapiNr;
-        // nvim.ui_attach(64, 64, [();0]).await.unwrap();
-        nvim.nr().ui_attach(64, 64, Pairs::new().with("rgb", true)).unwrap();
-        // let atach = nvim.ui_attach(64, 64, Pairs::new().with("rgb", true));
-        // let atach = nvim.ui_attach(64, 64, Pairs::new().with("rgb", true));
-        // let pa = Box::pin(atach);
-        // PollOnce{inner: pa}.await;
-        // nvim.ui_attach(64, 64, Pairs::new().with("rgb", 42)).await.unwrap();
-        debug!("attached");
-        // let w: Value = nvim.call_fn_wv("nvim_strwidth".into(), "fsajll".into()).await.unwrap();
-        let w = nvim.nr().strwidth("hello").unwrap();
-        let w = nvim.nr().strwidth("hello").unwrap();
-        let w = nvim.strwidth("hellooooooo").await.unwrap();
-        debug!("w: {w}");
-    }
-}
-struct PollOnce<F: Future> {
-    inner: F,
-}
-// impl<F: std::future::Future> Future for PollOnce<F> {
-//     type Output = Option<F::Output>;
-
-//     fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
-//         let this = unsafe{self.get_unchecked_mut()};
-//         let inner = unsafe { std::pin::Pin::new_unchecked(&mut this.inner) };
-//         match Future::poll(inner, cx) {
-//             core::task::Poll::Ready(o) => return core::task::Poll::Ready(Some(o)),
-//             core::task::Poll::Pending => return core::task::Poll::Ready(None),
-//         };
-//     }
-// }
-
-impl<F> Future for PollOnce<F>
-where
-    F: Future + Unpin,
-{
-    type Output = core::task::Poll<F::Output>;
-
-    fn poll(mut self: core::pin::Pin<&mut Self>, cx: &mut core::task::Context<'_>) -> core::task::Poll<Self::Output> {
-        core::task::Poll::Ready(core::pin::Pin::new(&mut self.inner).poll(cx))
-    }
 }

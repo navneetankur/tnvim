@@ -62,7 +62,7 @@ impl<'de> Deserialize<'de> for Color {
                 where
                     E: serde::de::Error,
             {
-                Ok(Color::from(v as u32))
+                Ok(Color::from(v))
             }
             fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
                 where

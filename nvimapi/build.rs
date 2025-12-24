@@ -293,19 +293,19 @@ fn handle_functions(w: &mut impl Write, value: &Value, with_ret: bool) {
     let api_doc = std::fs::read_to_string(API_DOC_FILE).unwrap_or_default();
     let api_doc: Vec<&str> = api_doc.split("\n").collect();
     'outer: for fun in functions {
-        if let ControlFlow::Break(_) = handle_fun(&mut buffer, &ignored_types, &fun, false, with_ret, &api_doc) {
+        if let ControlFlow::Break(_) = handle_fun(&mut buffer, &ignored_types, fun, false, with_ret, &api_doc) {
             continue 'outer;
         }
         w.write_all(buffer.as_bytes()).unwrap();
         if buffer.contains("Serialize") || buffer.contains("Deserialize") {
-            let vf = handle_fun(&mut buffer, &ignored_types, &fun, true, with_ret,  &api_doc);
+            let vf = handle_fun(&mut buffer, &ignored_types, fun, true, with_ret,  &api_doc);
             assert!(matches!(vf, ControlFlow::Continue(_)), "if it was fine with serde it should be fine with value.");
             w.write_all(buffer.as_bytes()).unwrap();
         }
     }
 }
 
-fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_value: bool, with_ret: bool, api_doc: &[&str],) -> ControlFlow<()> {
+fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_value: bool, with_ret: bool, _api_doc: &[&str],) -> ControlFlow<()> {
     buffer.clear();
     let deprecated = value_get(fun, "deprecated_since");
     if deprecated.is_some() {
@@ -314,7 +314,7 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
     let fn_name = value_get(fun, "name").unwrap().as_str().unwrap();
     let doc = "";
     // let doc = get_doc_for_fn(fn_name, api_doc);
-    buffer.push_str(&doc);
+    buffer.push_str(doc);
     if with_ret { buffer.push_str("async "); }
     buffer.push_str("fn ");
     buffer.push_str(fn_name.trim_prefix("nvim_"));
@@ -396,7 +396,7 @@ fn handle_fun(buffer: &mut String, ignored_types: &[&str], fun: &Value, use_valu
     buffer.push('}');
     return ControlFlow::Continue(());
 }
-fn get_doc_for_fn(name: &str, api_doc: &[&str]) -> String {
+fn _get_doc_for_fn(name: &str, api_doc: &[&str]) -> String {
     let to_search = format!("*{name}()*");
     let mut write_it = false;
     // let's say 22 lines with 50 chars each?.

@@ -15,7 +15,7 @@ impl Display for Error {
         if let Some(e) = &self.source {
             write!(f, "cause by: {e}")?;
         }
-        return Ok(());
+        Ok(())
     }
 }
 impl core::error::Error for Error {

@@ -49,7 +49,7 @@ pub fn readloop<R: Read>(
                     debug!("response for msgid: {msgid}, with no receiver");
                     unprocessed_request = Some(corres_request);
                 }
-                else if let Err(_) = corres_request.sender.send(response.result) {
+                else if corres_request.sender.send(response.result).is_err() {
                     warn!("return value channel dropped for msg id: {}", corres_request.msg_id);
                 }
             },
@@ -71,7 +71,7 @@ pub fn readloop<R: Read>(
     }
 }
 
-fn check_messages_from_handler(rx: &std::sync::mpsc::Receiver<MsgToReader>, pending_requests: &mut VecDeque<PendingRequest>) -> ControlFlow<()> {
+fn _check_messages_from_handler(rx: &std::sync::mpsc::Receiver<MsgToReader>, pending_requests: &mut VecDeque<PendingRequest>) -> ControlFlow<()> {
     loop { // check for internal messages. Probably from handler.
         match rx.try_recv() {
             Ok(msgfh) => {

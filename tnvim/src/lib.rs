@@ -10,7 +10,6 @@ use crate::app::App;
 mod app;
 mod nvim;
 mod term;
-use rustc_hash::FxHashMap as HashMap;
 
 fn attach(nvim: &impl Nvimapi,w: u16, h: u16) {
     use nvimapi::NvimapiNr;
@@ -22,7 +21,7 @@ const TERM_INPUT_BUFFER_SIZE :usize = 5;
 pub fn server() -> String {
     let mut socket_file = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_|String::from("/tmp"));
     socket_file.push_str("/tnvim-server.s");
-    return socket_file;
+    socket_file
 }
 pub fn main() {
     let app = App::default();
@@ -33,7 +32,7 @@ pub fn main() {
     rt.block_on(main_async(rt.clone(), app));
     drop(_enter);
 }
-async fn main_async(rt: Rc<LocalRuntime>, app: App) {
+async fn main_async(rt: Rc<LocalRuntime>, _app: App) {
     debug!("hello world");
     let app = Rc::new(App::default());
     let (starter, nvim,) = start_nvim_manager(app.clone(), rt.clone());
@@ -62,11 +61,11 @@ fn start_nvim_manager(app: Rc<App>, rt: Rc<LocalRuntime>) -> (impl Future, impl 
             connection.unwrap()
         };
     let (task, nvim) = nvimapi::manager::start(app, rt, stream.try_clone().unwrap(), stream);
-    return (task,nvim);
+    (task,nvim)
 }
 
 fn start_nvim(socket_path: &str) {
-    let command = Command::new("nvim")
+    let _command = Command::new("nvim")
         .args([
             "--listen", socket_path,
             "--headless",

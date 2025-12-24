@@ -1,9 +1,7 @@
-use log::debug;
 use nvimapi::{Color, uievent::Tabpage};
 use serde::Deserialize;
-use suffixes::CastIt;
 use veci1::VecI1;
-use crate::{app::App, terminal::{CursorShape, Terminal}};
+use crate::terminal::{CursorShape, Terminal};
 
 #[derive(Default)]
 pub struct Data {
@@ -111,7 +109,7 @@ impl Data {
                 (bg, fg)
             };
         // debug!("fg: {fg:?}, bg: {bg:?}");
-        let sp = rgb_attr.special.unwrap_or(dsp);
+        let _sp = rgb_attr.special.unwrap_or(dsp);
         term.set_colors(bg, fg,).unwrap();
     }
     pub fn apply_hl_id(&mut self, hl_id: u16, term: &Terminal) {
@@ -121,12 +119,9 @@ impl Data {
 }
 
 mod app {
-use core::cell::RefCell;
 
-use anyhow::anyhow;
-use suffixes::WrappedResult;
 
-use crate::{App, nvim::{Data, data::{Position, Size}}};
+use crate::App;
 impl App {
     pub fn set_cursor(&self, col: u16, row: u16) {
         let mut data = self.nvimdata.borrow_mut();

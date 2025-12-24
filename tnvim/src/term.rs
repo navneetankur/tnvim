@@ -1,9 +1,9 @@
 use std::rc::Rc;
 use crate::terminal;
 use terminal::event::{KeyCode, KeyModifiers};
-use log::{debug, info, trace};
-use nvimapi::{Nvimapi, NvimapiNr, Pairs, UiOptions};
-use tokio::sync::mpsc::{self, error::TrySendError};
+use log::{debug, trace};
+use nvimapi::{Nvimapi, NvimapiNr};
+use tokio::sync::mpsc::{self};
 use crate::{TERM_INPUT_BUFFER_SIZE, app::App};
 
 pub async fn input_from_term(this: Rc<App>, nvim: impl Nvimapi) {
@@ -15,7 +15,7 @@ pub async fn input_from_term(this: Rc<App>, nvim: impl Nvimapi) {
     ;
 }
 
-async fn on_mouse(app: &App, nvim: &impl Nvimapi, mouse_event: terminal::event::MouseEvent) {
+async fn on_mouse(_app: &App, nvim: &impl Nvimapi, mouse_event: terminal::event::MouseEvent) {
     // debug!("got here");
     let (btn, action) = 
         match mouse_event.kind {
@@ -108,10 +108,8 @@ async fn on_key(app: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyE
             },
             _ => (),
         };
-    } else {
-        if let Some(to_send) = to_nvim_input_key(key_event) {
-            nvim.input(&to_send).await.unwrap();
-        }
+    } else if let Some(to_send) = to_nvim_input_key(key_event) {
+        nvim.input(&to_send).await.unwrap();
     }
 }
 
@@ -162,7 +160,7 @@ fn to_nvim_input_key(key_event: terminal::event::KeyEvent) -> Option<String> {
     if !modifiers.is_empty() {
         rv.push('>');
     }
-    return Some(rv);
+    Some(rv)
 }
 fn special_key_map(code: KeyCode,) -> &'static str {
     match code {

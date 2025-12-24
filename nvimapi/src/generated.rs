@@ -3,7 +3,6 @@ use crate::TryFromValue;
 use crate::contseq::ContSeq;
 use crate::error;
 use crate::nvimapi::{BUFFER_ID, TABPAGE_ID, WINDOW_ID};
-use log::debug;
 use rmpv::Value;
 use serde::Deserializer;
 use serde::{Deserialize, Serialize};

@@ -1,10 +1,10 @@
 use std::io::{Write, stdout};
-use log::{debug, trace};
+use log::trace;
 use nvimapi::{Nvimapi, Pairs, TryFromValue, uievent};
 use rmpv::Value;
 use serde::Deserialize;
 use suffixes::CastIt;
-use crate::{app::App, nvim::{MAIN_GRID, data::{RgbAttrs}}, };
+use crate::{app::App, nvim::data::{RgbAttrs}, };
 use nvimapi::Color as NColor;
 use crate::terminal::CursorShape;
 
@@ -53,7 +53,7 @@ pub(super) async fn do_grid_resize(this: &App, _: &impl Nvimapi, events: Vec<uie
     data.surface = grid::Grid::new(size.height.u(), size.width.u());
     drop(data);
 }
-pub(super) async fn do_grid_clear(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridClear>) {
+pub(super) async fn do_grid_clear(app: &App, _nvim: &impl Nvimapi, events: Vec<uievent::GridClear>) {
     assert_eq!(events[0].grid, 1, "I only clear whole screen assuming there is only one grid.");
     let mut data = app.nvimdata.borrow_mut();
     data.surface.iter_mut().for_each(|v| *v = Default::default());
@@ -61,7 +61,7 @@ pub(super) async fn do_grid_clear(app: &App, nvim: &impl Nvimapi, events: Vec<ui
     app.terminal.clear_screen().unwrap();
     trace!("grid_clear");
 }
-pub(super) async fn do_grid_cursor_goto(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridCursorGoto>) {
+pub(super) async fn do_grid_cursor_goto(this: &App, _nvim: &impl Nvimapi, events: Vec<uievent::GridCursorGoto>) {
     for grid_cursor_goto in events {
         let col = grid_cursor_goto.col.u16();
         let row = grid_cursor_goto.row.u16();
@@ -69,14 +69,14 @@ pub(super) async fn do_grid_cursor_goto(this: &App, nvim: &impl Nvimapi, events:
         this.set_cursor(col, row);
     }
 }
-pub(super) async fn do_grid_line(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridLine>) {
+pub(super) async fn do_grid_line(app: &App, _nvim: &impl Nvimapi, events: Vec<uievent::GridLine>) {
     trace!("grid_line");
     let mut current_hl_id = 1;
     let mut buffer = String::with_capacity(30);
     let mut data = app.nvimdata.borrow_mut();
     for line in events {
-        let mut col = 0 + line.col_start.u16();
-        let row = 0 + line.row.u16();
+        let mut col = line.col_start.u16();
+        let row = line.row.u16();
         // debug!("row: {row}");
         app.terminal.move_cursor(col, row).unwrap();
         // write!(stdout, "g:{_grid}").unwrap();
@@ -125,10 +125,10 @@ pub(super) async fn do_grid_line(app: &App, nvim: &impl Nvimapi, events: Vec<uie
     app.terminal.move_cursor(data.cursor.pos.col, data.cursor.pos.row).unwrap();
     drop(data);
 }
-pub(super) async fn do_flush(this: &App, nvim: &impl Nvimapi, events: Vec<uievent::Flush>) {
+pub(super) async fn do_flush(_this: &App, _nvim: &impl Nvimapi, _events: Vec<uievent::Flush>) {
     stdout().flush().unwrap();
 }
-pub(super) async fn do_grid_scroll(app: &App, nvim: &impl Nvimapi, events: Vec<uievent::GridScroll>) {
+pub(super) async fn do_grid_scroll(app: &App, _nvim: &impl Nvimapi, events: Vec<uievent::GridScroll>) {
     log::trace!("grid_scroll");
     // debug!("grid_scroll");
     let mut data = app.nvimdata.borrow_mut();
@@ -161,12 +161,12 @@ fn handle_scroll_row(app: &App, data: &mut std::cell::RefMut<'_, super::Data>, b
         let col = col.u();
         let cell = data.surface[(row.u(), col)];
         // let Some(cell) = cell else {continue;};
-        data.surface[(new_row.into(), col)] = cell;
+        data.surface[(new_row, col)] = cell;
         data.apply_hl_id(cell.hl, &app.terminal);
         app.terminal.print(cell.char_.encode_utf8(buffer)).unwrap();
     }
 }
-pub(super) async fn do_mode_change(app: &App, nvim: &impl Nvimapi, mode_changes: Vec<uievent::ModeChange>) {
+pub(super) async fn do_mode_change(app: &App, _nvim: &impl Nvimapi, mode_changes: Vec<uievent::ModeChange>) {
     // debug!("{mode_changes:?}");
     for mode in mode_changes {
         if let Some(cursor_shape) = app.nvimdata.borrow().mode_cursors.get(mode.mode_idx.u()) {
@@ -175,8 +175,8 @@ pub(super) async fn do_mode_change(app: &App, nvim: &impl Nvimapi, mode_changes:
     }
     // mode (normal, insert) has changed.
 }
-pub(super) async fn do_mode_info_set(app: &App, nvim: &impl Nvimapi, mode_info_sets: Vec<uievent::ModeInfoSet>) {
-    let json = serde_json::to_string(&mode_info_sets).unwrap();
+pub(super) async fn do_mode_info_set(app: &App, _nvim: &impl Nvimapi, mode_info_sets: Vec<uievent::ModeInfoSet>) {
+    let _json = serde_json::to_string(&mode_info_sets).unwrap();
     // debug!("{json}");
     let mut mode_cursors = Vec::<CursorShape>::new();
     for mode_info in mode_info_sets {
@@ -188,8 +188,8 @@ pub(super) async fn do_mode_info_set(app: &App, nvim: &impl Nvimapi, mode_info_s
                 let cursor_shape = cursor_shape.as_str().unwrap();
                 let blink_on = cursor_style.get_for_key("blinkon").map(|v| v.as_i64().unwrap()).unwrap_or(0);
                 let blink_off = cursor_style.get_for_key("blinkoff").map(|v| v.as_i64().unwrap()).unwrap_or(0);
-                let blink_wait = cursor_style.get_for_key("blinkwait").map(|v| v.as_i64().unwrap()).unwrap_or(0);
-                let no_blink = (blink_on == 0 || blink_off == 0);
+                let _blink_wait = cursor_style.get_for_key("blinkwait").map(|v| v.as_i64().unwrap()).unwrap_or(0);
+                let no_blink = blink_on == 0 || blink_off == 0 ;
                 let shape = 
                     match cursor_shape {
                         "block" => {

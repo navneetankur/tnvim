@@ -1,6 +1,4 @@
-use std::io::stdout;
 use nvimapi::{Nvimapi, uievent};
-use rmpv::Value;
 use crate::app::App;
 
 

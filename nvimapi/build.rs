@@ -39,6 +39,7 @@ pub fn main() {
         "--edition", "2024", GENERATED_FILENAME,
     ]).spawn();
     const NVIMAPI_NR: &str = r###"
+    #[allow(clippy::useless_conversion)]
     pub trait NvimapiNr {
         fn call_fn_wv(
             &self,
@@ -50,6 +51,8 @@ pub fn main() {
     "###;
 
     const NVIMAPI_DECL: &str = r###"
+    #[allow(async_fn_in_trait)]
+    #[allow(clippy::useless_conversion)]
     pub trait Nvimapi {
         fn nr(&self) -> &impl NvimapiNr;
         fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()>;
@@ -213,6 +216,7 @@ fn snake_to_pascal(snake: &str) -> String {
 
 const HEADER: &str = r###"
 use crate::nvimapi::{TABPAGE_ID, WINDOW_ID, BUFFER_ID};
+#[allow(unused_imports)]
 use log::debug;
 use serde::Deserializer;
 use crate::contseq::ContSeq;
@@ -238,17 +242,17 @@ type Dict   = Pairs<Value,Value>;
 type Object = Value;
 impl From<Buffer> for Value {
     fn from(that: Buffer) -> Self {
-        Value::from(that.0)
+        that.0
     }
 }
 impl From<Window> for Value {
     fn from(that: Window) -> Self {
-        Value::from(that.0)
+       that.0
     }
 }
 impl From<Tabpage> for Value {
     fn from(that: Tabpage) -> Self {
-        Value::from(that.0)
+        that.0
     }
 }
 impl TryFromValue for Buffer {

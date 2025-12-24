@@ -38,9 +38,8 @@ pub fn init_logger() {
         .init();
 }
 pub fn init_logger_debug() {
-    if let Err(e) = std::os::unix::fs::mkfifo(LOG_FIFO, std::fs::Permissions::from_mode(0o600)) {
-        if e.kind() != std::io::ErrorKind::AlreadyExists { panic!("{e}") };
-    }
+    if let Err(e) = std::os::unix::fs::mkfifo(LOG_FIFO, std::fs::Permissions::from_mode(0o600))
+        && e.kind() != std::io::ErrorKind::AlreadyExists { panic!("{e}") };
     let fifo = match open_fifo(LOG_FIFO, true) {
         Ok(fifo) => fifo,
         Err(e) => {
@@ -72,6 +71,7 @@ fn open_fifo(path: impl AsRef<std::path::Path>, no_block: bool) -> std::io::Resu
 }
 
 
+#[allow(clippy::zombie_processes)]
 fn temp_start_kitty(path: &str) {
     std::process::Command::new("kitty")
         .args(["--single-instance",

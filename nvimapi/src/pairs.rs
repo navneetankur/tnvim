@@ -37,7 +37,7 @@ impl<K, V> Pairs<K, V> {
         self.inner.extend(iter);
         return self;
     }
-    pub fn from_iter<I>(iter: I) -> Self
+    pub fn from_iter2<I>(iter: I) -> Self
     where 
         I: IntoIterator<Item = (K,V)>
     {

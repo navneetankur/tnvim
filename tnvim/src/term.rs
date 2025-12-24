@@ -96,11 +96,10 @@ async fn on_key(app: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyE
             KeyCode::Char('c') => super::exit(),
             KeyCode::Char('r') => {
                 debug!("got ctrl a");
-                let data = app.nvimdata.borrow_mut();
-                let w = data.ui_size.w;
-                let h = data.ui_size.h;
+                let ui_size = app.nvimdata.borrow_mut().ui_size.clone();
+                let w = ui_size.w;
+                let h = ui_size.h;
                 let _: rmpv::Value = nvim.exec2(&format!("call rpcnotify(0, 'tnvim.focused', #{{ size: #{{width : {w}, height : {h} }} }})"), [0;0]).await.unwrap();
-                drop(data);
             },
             KeyCode::Char('a') => {
                 let size = app.nvimdata.borrow().ui_size.clone();

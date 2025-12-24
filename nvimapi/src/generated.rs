@@ -3,6 +3,8 @@ use crate::TryFromValue;
 use crate::contseq::ContSeq;
 use crate::error;
 use crate::nvimapi::{BUFFER_ID, TABPAGE_ID, WINDOW_ID};
+#[allow(unused_imports)]
+use log::debug;
 use rmpv::Value;
 use serde::Deserializer;
 use serde::{Deserialize, Serialize};
@@ -23,17 +25,17 @@ type Dict = Pairs<Value, Value>;
 type Object = Value;
 impl From<Buffer> for Value {
     fn from(that: Buffer) -> Self {
-        Value::from(that.0)
+        that.0
     }
 }
 impl From<Window> for Value {
     fn from(that: Window) -> Self {
-        Value::from(that.0)
+        that.0
     }
 }
 impl From<Tabpage> for Value {
     fn from(that: Tabpage) -> Self {
-        Value::from(that.0)
+        that.0
     }
 }
 impl TryFromValue for Buffer {
@@ -70,6 +72,8 @@ impl TryFromValue for Tabpage {
     }
 }
 
+#[allow(async_fn_in_trait)]
+#[allow(clippy::useless_conversion)]
 pub trait Nvimapi {
     fn nr(&self) -> &impl NvimapiNr;
     fn send_response_wv(&self, msgid: i32, error: Value, result: Value) -> error::Result<()>;
@@ -1326,6 +1330,7 @@ pub trait Nvimapi {
     }
 }
 
+#[allow(clippy::useless_conversion)]
 pub trait NvimapiNr {
     fn call_fn_wv(
         &self,

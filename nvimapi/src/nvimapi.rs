@@ -100,10 +100,8 @@ impl<W: Write> Nvimapi for Nvimrpc<W>
         // this is sent to readloop first, to avoid the possibility that readloop receives the
         // reply from nvim, but does not have received the corres_request yet.
         self.tx_to_reader.send(msg).await.unwrap();
-        let mut w = self.write.borrow_mut();
         // socket buffer is around 200 kb in linux, so it shouldn't block due to full.
-        rmpv::encode::write_value(w.deref_mut(), &request)?;
-        drop(w);
+        rmpv::encode::write_value(self.write.borrow_mut().deref_mut(), &request)?;
         let rv = rx.await??;
         return R::try_from_value(rv);
     }
@@ -120,10 +118,8 @@ impl<W: Write> Nvimapi for Nvimrpc<W>
         // this is sent to readloop first, to avoid the possibility that readloop receives the
         // reply from nvim, but does not have received the corres_request yet.
         self.tx_to_reader.send(msg).await.unwrap();
-        let mut w = self.write.borrow_mut();
         // socket buffer is around 200 kb in linux, so it shouldn't block due to full.
-        rmp_serde::encode::write_named(w.deref_mut(), &request)?;
-        drop(w);
+        rmp_serde::encode::write_named(self.write.borrow_mut().deref_mut(), &request)?;
         let rv = rx.await??;
         return Ok(D::deserialize(rv)?);
     }

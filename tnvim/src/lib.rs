@@ -13,7 +13,7 @@ mod term;
 
 fn attach(nvim: &impl Nvimapi,w: u16, h: u16) {
     use nvimapi::NvimapiNr;
-    nvim.nr().ui_attach(w.into(), h.into(), nvimapi::Pairs::from_iter([
+    nvim.nr().ui_attach(w.into(), h.into(), nvimapi::Pairs::from_iter2([
         (nvimapi::UiOptions::ExtLinegrid, true),
     ])).unwrap();
 }
@@ -47,7 +47,7 @@ fn start_nvim_manager(app: Rc<App>, rt: Rc<LocalRuntime>) -> (impl Future, impl 
     let stream =
         if let Ok(stream) = stream { stream }
         else {
-            std::fs::remove_file(&socket_path);
+            let _ = std::fs::remove_file(&socket_path);
             start_nvim(&socket_path);
             let mut connection = None;
             for _ in 0..100 {
@@ -64,6 +64,7 @@ fn start_nvim_manager(app: Rc<App>, rt: Rc<LocalRuntime>) -> (impl Future, impl 
     (task,nvim)
 }
 
+#[allow(clippy::zombie_processes)]
 fn start_nvim(socket_path: &str) {
     let _command = Command::new("nvim")
         .args([

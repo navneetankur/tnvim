@@ -2,6 +2,7 @@ use core::ops::Deref;
 use std::rc::Rc;
 
 use crate::{msgrpc::Request, nvimapi::{Nvimapi, notification::Notification}};
+#[allow(async_fn_in_trait)]
 pub trait Handler {
     async fn notify(&self, nvim: &impl Nvimapi, notification: Notification);
     async fn request(&self, nvim: &impl Nvimapi, request: Box<Request>);

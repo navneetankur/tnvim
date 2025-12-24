@@ -4,7 +4,6 @@ use log::{debug, warn};
 use nvimapi::{Handler, Notification, Nvimapi, Request, UiEvent};
 use rmpv::Value;
 use crate::app::App;
-pub const MAIN_GRID: u8 = 1;
 
 
 async fn redraw_notification(app: &App, nvim: &impl Nvimapi, redraw: Vec<UiEvent>) {

@@ -58,6 +58,7 @@ pub struct RgbAttrs {
     pub blend: u8,
     pub url: String,
 }
+#[allow(dead_code)]
 #[derive(Default, Debug, Clone, Copy)]
 pub enum GridType {
     #[default]
@@ -65,6 +66,7 @@ pub enum GridType {
     Message,
     Main,
 }
+#[allow(dead_code)]
 #[derive(Debug, Default, Clone)]
 pub struct Grid {
     pub size: Size,
@@ -82,6 +84,7 @@ pub struct Position {
 }
 
 impl Position {
+    #[allow(dead_code)]
     pub fn new(col: u16, row: u16,) -> Self {
         Self {col, row}
     }

@@ -16,7 +16,6 @@ pub async fn input_from_term(this: Rc<App>, nvim: impl Nvimapi) {
 }
 
 async fn on_mouse(_app: &App, nvim: &impl Nvimapi, mouse_event: terminal::event::MouseEvent) {
-    // debug!("got here");
     let (btn, action) = 
         match mouse_event.kind {
             crossterm::event::MouseEventKind::Down(mouse_button) => {
@@ -76,7 +75,7 @@ async fn on_mouse(_app: &App, nvim: &impl Nvimapi, mouse_event: terminal::event:
 }
 
 async fn on_paste(_: &App, nvim: &impl Nvimapi, paste: String) {
-    debug!("paste: {paste}");
+    log::trace!("paste: {paste}");
     nvim.nr().paste(&paste, true, -1).unwrap();
 }
 
@@ -88,26 +87,9 @@ async fn on_resize(app: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
     drop(data);
 }
 
-async fn on_key(app: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
-    use terminal::event::{KeyCode, KeyModifiers};
+async fn on_key(_: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
     trace!("on key: {key_event:?}");
-    if key_event.modifiers.contains(KeyModifiers::CONTROL) {
-        match key_event.code {
-            KeyCode::Char('c') => super::exit(),
-            KeyCode::Char('r') => {
-                debug!("got ctrl a");
-                let ui_size = app.nvimdata.borrow_mut().ui_size.clone();
-                let w = ui_size.w;
-                let h = ui_size.h;
-                let _: rmpv::Value = nvim.exec2(&format!("call rpcnotify(0, 'tnvim.focused', #{{ size: #{{width : {w}, height : {h} }} }})"), [0;0]).await.unwrap();
-            },
-            KeyCode::Char('a') => {
-                let size = app.nvimdata.borrow().ui_size.clone();
-                crate::attach(nvim, size.w, size.h);
-            },
-            _ => (),
-        };
-    } else if let Some(to_send) = to_nvim_input_key(key_event) {
+    if let Some(to_send) = to_nvim_input_key(key_event) {
         nvim.input(&to_send).await.unwrap();
     }
 }

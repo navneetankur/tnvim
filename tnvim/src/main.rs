@@ -8,7 +8,7 @@ fn main() {
     }
     #[cfg(not(debug_assertions))]
     init_logger();
-    tnvim::main();
+    tnvim::main(std::env::args());
 }
 
 const LOG_FIFO: &str = "/tmp/tnvim.log.fifo";
@@ -21,8 +21,9 @@ pub fn init_logger() {
         } else {
             return;
         };
+    let _ = std::fs::create_dir_all(&folder);
     let logfile_path = folder.join("tnvim.log");
-    let Ok(logfile) = std::fs::OpenOptions::new().append(true).open(&logfile_path) else {
+    let Ok(logfile) = std::fs::OpenOptions::new().create(true).append(true).open(&logfile_path) else {
         println!("failed to open logfile: {}", logfile_path.display());
         return;
     };

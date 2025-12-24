@@ -23,27 +23,30 @@ pub fn server() -> String {
     socket_file.push_str("/tnvim-server.s");
     socket_file
 }
-pub fn main() {
+pub fn main(mut args: std::env::Args) {
     let app = App::default();
     setup(&app.terminal);
     let rt = LocalRuntime::new().unwrap();
     let rt = Rc::new(rt);
-    let _enter = rt.enter();
-    rt.block_on(main_async(rt.clone(), app));
-    drop(_enter);
+    let enter = rt.enter();
+    args.next(); //program name
+    rt.block_on(main_async(rt.clone(), app, args));
+    drop(enter);
 }
-async fn main_async(rt: Rc<LocalRuntime>, _app: App) {
+async fn main_async(rt: Rc<LocalRuntime>, _app: App, args: std::env::Args) {
     debug!("hello world");
     let app = Rc::new(App::default());
-    let (starter, nvim,) = start_nvim_manager(app.clone(), rt.clone());
+    let (starter, nvim,) = start_nvim_manager(app.clone(), rt.clone(), args);
     rt.spawn_local(term::input_from_term(app, nvim));
     starter.await;
     before_exit();
 }
 
-fn start_nvim_manager(app: Rc<App>, rt: Rc<LocalRuntime>) -> (impl Future, impl Nvimapi) {
+fn start_nvim_manager(app: Rc<App>, rt: Rc<LocalRuntime>, mut args: std::env::Args) -> (impl Future, impl Nvimapi) {
+    use nvimapi::NvimapiNr;
     let socket_path = server();
     let stream = UnixStream::connect(&socket_path);
+    let mut new_nvim = false;
     let stream =
         if let Ok(stream) = stream { stream }
         else {
@@ -58,9 +61,18 @@ fn start_nvim_manager(app: Rc<App>, rt: Rc<LocalRuntime>) -> (impl Future, impl 
                     std::thread::sleep(Duration::from_millis(10));
                 }
             }
-            connection.unwrap()
+            new_nvim = true;
+            connection.unwrap_or_else(|| panic!("failed to connect to: {socket_path}"))
         };
     let (task, nvim) = nvimapi::manager::start(app, rt, stream.try_clone().unwrap(), stream);
+    let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    if let Some(arg) = args.next() {
+        if !new_nvim { nvim.nr().command("tabnew").unwrap(); }
+        nvim.nr().command(&format!("edit {}/{arg}", cwd.display())).unwrap();
+    }
+    for arg in args {
+        nvim.nr().command(&format!("edit {}/{arg}", cwd.display())).unwrap();
+    }
     (task,nvim)
 }
 

@@ -113,8 +113,9 @@ fn setup(term: &Terminal) {
 fn set_panic_hook() {
     let hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |panic_info| {
+        before_exit();
         hook(panic_info);
-        exit();
+        std::process::exit(3);
     }));
 }
 

@@ -53,6 +53,7 @@ impl Handler for App {
         let (w,h) = self.terminal.size().unwrap();
         self.nvimdata.borrow_mut().ui_size = data::Size { w, h };
         crate::attach(nvim, w, h);
+        self.nvimdata.borrow_mut().attached = true;
     }
 }
 

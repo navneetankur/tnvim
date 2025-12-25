@@ -81,7 +81,14 @@ async fn on_paste(_: &App, nvim: &impl Nvimapi, paste: String) {
 
 async fn on_resize(app: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
     let mut data = app.nvimdata.borrow_mut();
-    nvim.nr().ui_try_resize(w.into(), h.into()).unwrap();
+    let attached = app.nvimdata.borrow().attached;
+    if attached {
+        nvim.nr().ui_try_resize(w.into(), h.into()).unwrap();
+    }
+    else {
+        crate::attach(nvim, w, h);
+        nvim.nr().ui_detach().unwrap();
+    }
     data.ui_size.w = w;
     data.ui_size.h = h;
     drop(data);
@@ -97,6 +104,7 @@ async fn on_key(_: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEve
 async fn on_focus_lost(app: &App, nvim: &impl Nvimapi) {
     nvim.nr().ui_set_focus(false).unwrap();
     nvim.nr().ui_detach().unwrap();
+    app.nvimdata.borrow_mut().attached = false;
     let current_tab = nvim.get_current_tabpage().await.unwrap();
     app.nvimdata.borrow_mut().my_tab = Some(current_tab);
 }
@@ -104,6 +112,7 @@ async fn on_focus_gained(app: &App, nvim: &impl Nvimapi) {
     nvim.nr().ui_set_focus(true).unwrap();
     let size = app.nvimdata.borrow().ui_size.clone();
     crate::attach(nvim, size.w, size.h);
+    app.nvimdata.borrow_mut().attached = true;
     let my_tab = app.nvimdata.borrow().my_tab.clone();
     if let Some(my_tab) = my_tab {
         // some delay, so that the other ui which lost focus, can save it's current tab before I

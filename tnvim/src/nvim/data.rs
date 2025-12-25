@@ -14,6 +14,7 @@ pub struct Data {
     pub current_hl_id: u16,
     pub mode_cursors: Vec<CursorShape>,
     pub my_tab: Option<Tabpage>,
+    pub attached: bool,
 }
 
 #[derive(Debug, Clone, Copy)]

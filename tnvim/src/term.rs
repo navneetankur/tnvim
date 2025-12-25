@@ -97,7 +97,8 @@ async fn on_resize(app: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
 async fn on_key(_: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
     trace!("on key: {key_event:?}");
     if let Some(to_send) = to_nvim_input_key(key_event) {
-        nvim.input(&to_send).await.unwrap();
+        nvim.nr().input(&to_send).unwrap();
+        debug!("sent: {to_send}");
     }
 }
 
@@ -138,7 +139,9 @@ fn to_nvim_input_key(key_event: terminal::event::KeyEvent) -> Option<String> {
         }
     }
     if let KeyCode::Char(c) = key_event.code {
-        rv.push(c);
+        if c == '<' {
+            rv.push_str("<LT>");
+        } else { rv.push(c); }
     } else {
         let spc = special_key_map(key_event.code);
         if spc.is_empty() { return None }

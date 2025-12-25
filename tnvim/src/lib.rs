@@ -98,6 +98,7 @@ fn before_exit() {
     let _ = terminal::disable_mouse_events();
     let _ = terminal::disable_focus_events();
     let _ = terminal::disable_bracketed_paste();
+    let _ = terminal::disable_kitty_keyboard_protocol();
 }
 
 fn setup(term: &Terminal) {
@@ -108,6 +109,7 @@ fn setup(term: &Terminal) {
     term.enable_mouse_events().unwrap();
     term.enable_focus_events().unwrap();
     term.enable_bracketed_paste().unwrap();
+    term.enable_kitty_keyboard_protocol().unwrap();
 }
 
 fn set_panic_hook() {

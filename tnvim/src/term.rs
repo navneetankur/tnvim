@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use crate::terminal;
 use terminal::event::{KeyCode, KeyModifiers};
+#[allow(unused_imports)]
 use log::{debug, trace};
 use nvimapi::{Nvimapi, NvimapiNr};
 use tokio::sync::mpsc::{self};
@@ -97,10 +98,10 @@ async fn on_resize(app: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
 }
 
 async fn on_key(_: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
-    trace!("on key: {key_event:?}");
+    debug!("on key: {key_event:?}");
     if let Some(to_send) = to_nvim_input_key(key_event) {
         nvim.nr().input(&to_send).unwrap();
-        // debug!("sent: {to_send}");
+        debug!("sent: {to_send}");
     }
 }
 

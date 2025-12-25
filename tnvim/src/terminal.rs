@@ -17,6 +17,10 @@ impl Terminal {
         crossterm::terminal::enable_raw_mode()?;
         Ok(self)
     }
+    pub fn enable_kitty_keyboard_protocol(&self) -> Ret<'_> {
+        stdout().execute(event::PushKeyboardEnhancementFlags(event::KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES))?;
+        Ok(self)
+    }
 
     pub fn set_title(&self, title: &str) -> error::Result<&Self> {
         self.out.borrow_mut().queue(crossterm::terminal::SetTitle(title))?;
@@ -83,6 +87,10 @@ impl Terminal {
         stdout.flush()?;
         return Ok(self);
     }
+}
+pub fn disable_kitty_keyboard_protocol() -> Result<(), std::io::Error> {
+    stdout().execute(event::PopKeyboardEnhancementFlags)?;
+    Ok(())
 }
 
 #[derive(Clone, Copy, Debug)]

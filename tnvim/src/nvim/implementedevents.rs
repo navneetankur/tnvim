@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use log::{debug, trace};
 use nvimapi::{Nvimapi, Pairs, TryFromValue, uievent};
 use rmpv::Value;

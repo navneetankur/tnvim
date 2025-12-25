@@ -1,4 +1,4 @@
-mod data;
+pub(crate) mod data;
 pub use data::Data;
 use log::{debug, warn};
 use nvimapi::{Handler, Notification, Nvimapi, Request, UiEvent};

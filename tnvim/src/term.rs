@@ -80,25 +80,27 @@ async fn on_paste(_: &App, nvim: &impl Nvimapi, paste: String) {
 }
 
 async fn on_resize(app: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
-    let mut data = app.nvimdata.borrow_mut();
-    let attached = data.attached;
+    let attached = app.nvimdata.borrow().attached;
     if attached {
         nvim.nr().ui_try_resize(w.into(), h.into()).unwrap();
     }
     else {
+        let current_tab = nvim.get_current_tabpage().await.unwrap();
+        if let Some(my_tab) = &app.nvimdata.borrow().my_tab {
+            nvim.nr().set_current_tabpage(my_tab).unwrap();
+        }
         crate::attach(nvim, w, h);
         nvim.nr().ui_detach().unwrap();
+        nvim.nr().set_current_tabpage(&current_tab).unwrap();
     }
-    data.ui_size.w = w;
-    data.ui_size.h = h;
-    drop(data);
+    app.nvimdata.borrow_mut().ui_size = crate::nvim::data::Size { w, h };
 }
 
 async fn on_key(_: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
     trace!("on key: {key_event:?}");
     if let Some(to_send) = to_nvim_input_key(key_event) {
         nvim.nr().input(&to_send).unwrap();
-        debug!("sent: {to_send}");
+        // debug!("sent: {to_send}");
     }
 }
 

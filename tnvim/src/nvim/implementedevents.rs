@@ -1,4 +1,4 @@
-use log::trace;
+use log::{debug, trace};
 use nvimapi::{Nvimapi, Pairs, TryFromValue, uievent};
 use rmpv::Value;
 use serde::Deserialize;
@@ -18,6 +18,7 @@ pub(super) async fn do_default_colors_set(app: &App, _: &impl Nvimapi, events: V
     let fg = NColor::from(colors.rgb_fg);
     let bg = NColor::from(colors.rgb_bg);
     let sp = NColor::from(colors.rgb_sp);
+    trace!("color set: {bg:?},{fg:?}");
     let mut data = app.nvimdata.borrow_mut();
     data.color_set.fg = fg;
     data.color_set.bg = bg;

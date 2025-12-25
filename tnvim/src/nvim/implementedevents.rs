@@ -1,4 +1,3 @@
-use std::io::{Write, stdout};
 use log::trace;
 use nvimapi::{Nvimapi, Pairs, TryFromValue, uievent};
 use rmpv::Value;
@@ -125,8 +124,8 @@ pub(super) async fn do_grid_line(app: &App, _nvim: &impl Nvimapi, events: Vec<ui
     app.terminal.move_cursor(data.cursor.pos.col, data.cursor.pos.row).unwrap();
     drop(data);
 }
-pub(super) async fn do_flush(_this: &App, _nvim: &impl Nvimapi, _events: Vec<uievent::Flush>) {
-    stdout().flush().unwrap();
+pub(super) async fn do_flush(app: &App, _nvim: &impl Nvimapi, _events: Vec<uievent::Flush>) {
+    app.terminal.flush().unwrap();
 }
 pub(super) async fn do_grid_scroll(app: &App, _nvim: &impl Nvimapi, events: Vec<uievent::GridScroll>) {
     log::trace!("grid_scroll");

@@ -46,7 +46,7 @@ pub fn readloop<R: Read>(
                         }
                     };
                 if msgid != corres_request.msg_id {
-                    debug!("response for msgid: {msgid}, with no receiver");
+                    log::trace!("response for msgid: {msgid}, with no receiver");
                     unprocessed_request = Some(corres_request);
                 }
                 else if corres_request.sender.send(response.result).is_err() {

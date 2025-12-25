@@ -61,6 +61,7 @@ pub(super) async fn do_grid_clear(app: &App, _nvim: &impl Nvimapi, events: Vec<u
     trace!("grid_clear");
 }
 pub(super) async fn do_grid_cursor_goto(this: &App, _nvim: &impl Nvimapi, events: Vec<uievent::GridCursorGoto>) {
+    trace!("cursor goto");
     for grid_cursor_goto in events {
         let col = grid_cursor_goto.col.u16();
         let row = grid_cursor_goto.row.u16();
@@ -125,11 +126,11 @@ pub(super) async fn do_grid_line(app: &App, _nvim: &impl Nvimapi, events: Vec<ui
     drop(data);
 }
 pub(super) async fn do_flush(app: &App, _nvim: &impl Nvimapi, _events: Vec<uievent::Flush>) {
+    trace!("flush");
     app.terminal.flush().unwrap();
 }
 pub(super) async fn do_grid_scroll(app: &App, _nvim: &impl Nvimapi, events: Vec<uievent::GridScroll>) {
     log::trace!("grid_scroll");
-    // debug!("grid_scroll");
     let mut data = app.nvimdata.borrow_mut();
     let mut buffer = [0u8;4];
     for scroll_event in events {

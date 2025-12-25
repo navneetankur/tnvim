@@ -36,6 +36,7 @@ pub fn init_logger() {
         .format_timestamp(None)
         .format_target(false)
         .target(env_logger::Target::Pipe(Box::new(logfile)))
+        .parse_default_env()
         .init();
 }
 pub fn init_logger_debug() {
@@ -60,6 +61,7 @@ pub fn init_logger_debug() {
         .format_timestamp(None)
         .format_target(false)
         .target(env_logger::Target::Pipe(Box::new(fifo)))
+        .parse_default_env()
         .init();
 }
 

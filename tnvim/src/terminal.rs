@@ -4,7 +4,7 @@ use std::io::{Write, stdout};
 use crossterm::{ExecutableCommand, QueueableCommand, style::Print, terminal::{self, LeaveAlternateScreen}};
 pub use crossterm::event;
 pub struct Terminal {
-    // out: RefCell<Stdout>,
+    // out: RefCell<std::io::Stdout>,
     out: RefCell<Vec<u8>>,
 }
 type Ret<'t> = error::Result<&'t Terminal>;
@@ -79,6 +79,7 @@ impl Terminal {
         out.flush()?;
         let mut stdout = stdout();
         stdout.write_all(&out)?;
+        out.clear();
         stdout.flush()?;
         return Ok(self);
     }
@@ -95,9 +96,8 @@ pub enum CursorShape {
 }
 impl Default for Terminal {
     fn default() -> Self {
-        Self {
-            out: RefCell::new(Vec::with_capacity(50 * 100)),
-        }
+        Self { out: RefCell::new(Vec::with_capacity(50 * 100)), }
+        // Self { out: RefCell::new(stdout()), }
     }
 }
 pub fn leave_alternate_screen() {

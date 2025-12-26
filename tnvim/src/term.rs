@@ -65,7 +65,6 @@ async fn on_mouse(_app: &App, nvim: &impl Nvimapi, mouse_event: terminal::event:
     let mods: String = mods.iter().collect();
     nvim.nr().input_mouse(btn, action, &mods, 1, mouse_event.row.into(), mouse_event.column.into()).unwrap();
     // nvim.input_mouse(btn, action, &mods, 1, mouse_event.row.into(), mouse_event.column.into()).await.unwrap();
-    // debug!("{}, {}, {}, {}, {}, {}", btn, action, mods, 0, mouse_event.row, mouse_event.column);
     fn btn_str(btn: crossterm::event::MouseButton) -> &'static str {
         match btn {
             crossterm::event::MouseButton::Left => "left",
@@ -98,10 +97,10 @@ async fn on_resize(app: &App, nvim: &impl Nvimapi, w: u16, h: u16) {
 }
 
 async fn on_key(_: &App, nvim: &impl Nvimapi, key_event: terminal::event::KeyEvent) {
-    debug!("on key: {key_event:?}");
+    trace!("on key: {key_event:?}");
     if let Some(to_send) = to_nvim_input_key(key_event) {
         nvim.nr().input(&to_send).unwrap();
-        debug!("sent: {to_send}");
+        trace!("sent: {to_send}");
     }
 }
 

@@ -16,15 +16,15 @@ pub struct Data {
     pub my_tab: Option<Tabpage>,
     pub attached: bool,
 }
-
-#[derive(Debug, Clone, Copy)]
+// saving char insted of string here makes display of multicodepoint input wrong.
+#[derive(Debug, Clone)]
 pub struct Cell {
-    pub char_: char,
+    pub char_: String,
     pub hl: u16,
 }
 impl Default for Cell {
     fn default() -> Self {
-        Self { char_: ' ', hl: 0 }
+        Self { char_: String::from(" "), hl: 0 }
     }
 }
 

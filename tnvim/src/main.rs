@@ -4,7 +4,7 @@ fn main() {
     #[cfg(debug_assertions)]
     {
         init_logger_debug();
-        log_panics::init();
+        // log_panics::init();
     }
     #[cfg(not(debug_assertions))]
     init_logger();

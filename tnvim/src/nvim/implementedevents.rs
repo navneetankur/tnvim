@@ -85,14 +85,24 @@ pub(super) async fn do_grid_line(app: &App, _nvim: &impl Nvimapi, events: Vec<ui
             let text = items.next().unwrap();
             let Value::String(text) = text else {unreachable!()};
             let text = text.into_str().unwrap_or_else(|| String::from("□"));
-            debug!("text: {text}");
+            // debug!("text: {text}");
             if let Some(hl_id) = items.next() {
                 let hl_id = hl_id.as_u64().unwrap().u16();
                 current_hl_id = hl_id;
                 data.apply_hl_id(current_hl_id, &app.terminal);
             } 
             let repeat = items.next().map(|v| v.as_i64().unwrap()).unwrap_or(1);
-            if repeat == 1 {
+            // repeat should be signed as it's possible for neovim to send repeat = 0.
+            for _ in 0..(repeat-1) {
+                app.terminal.print(&text).unwrap();
+                let gcell = crate::nvim::data::Cell {
+                    char_: text.clone(),
+                    hl: current_hl_id.u16(),
+                };
+                data.surface[(row.u(), col.u())] = gcell;
+                col += 1;
+            }
+            if repeat > 0 {
                 app.terminal.print(&text).unwrap();
                 let gcell = crate::nvim::data::Cell {
                     char_: text,
@@ -100,16 +110,6 @@ pub(super) async fn do_grid_line(app: &App, _nvim: &impl Nvimapi, events: Vec<ui
                 };
                 data.surface[(row.u(), col.u())] = gcell;
                 col += 1;
-            } else {
-                for _ in 0..repeat {
-                    app.terminal.print(&text).unwrap();
-                    let gcell = crate::nvim::data::Cell {
-                        char_: text.clone(),
-                        hl: current_hl_id.u16(),
-                    };
-                    data.surface[(row.u(), col.u())] = gcell;
-                    col += 1;
-                }
             }
         }
         // debug!("g: {grid},r: {row}, c: {col}, t: {buffer}");

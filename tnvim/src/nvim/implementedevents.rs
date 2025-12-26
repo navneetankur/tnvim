@@ -93,21 +93,9 @@ pub(super) async fn do_grid_line(app: &App, _nvim: &impl Nvimapi, events: Vec<ui
             } 
             let repeat = items.next().map(|v| v.as_i64().unwrap()).unwrap_or(1);
             // repeat should be signed as it's possible for neovim to send repeat = 0.
-            for _ in 0..(repeat-1) {
+            for _ in 0..repeat {
                 app.terminal.print(&text).unwrap();
-                let gcell = crate::nvim::data::Cell {
-                    char_: text.clone(),
-                    hl: current_hl_id.u16(),
-                };
-                data.surface[(row.u(), col.u())] = gcell;
-                col += 1;
-            }
-            if repeat > 0 {
-                app.terminal.print(&text).unwrap();
-                let gcell = crate::nvim::data::Cell {
-                    char_: text,
-                    hl: current_hl_id.u16(),
-                };
+                let gcell = crate::nvim::data::Cell::new(&text, current_hl_id.u16());
                 data.surface[(row.u(), col.u())] = gcell;
                 col += 1;
             }
@@ -153,7 +141,7 @@ fn handle_scroll_row(app: &App, data: &mut std::cell::RefMut<'_, super::Data>, s
         let cell = core::mem::take(&mut data.surface[(row.u(), col)]);
         // let Some(cell) = cell else {continue;};
         data.apply_hl_id(cell.hl, &app.terminal);
-        app.terminal.print(&cell.char_).unwrap();
+        app.terminal.print(cell.char_.as_str()).unwrap();
         data.surface[(new_row, col)] = cell;
     }
 }

@@ -1,5 +1,6 @@
 use nvimapi::{Color, uievent::Tabpage};
 use serde::Deserialize;
+use suffixes::CastIt;
 use veci1::VecI1;
 use crate::terminal::{CursorShape, Terminal};
 
@@ -19,12 +20,23 @@ pub struct Data {
 // saving char insted of string here makes display of multicodepoint input wrong.
 #[derive(Debug, Clone)]
 pub struct Cell {
-    pub char_: String,
+    pub char_: Grapheme,
     pub hl: u16,
+}
+#[derive(Clone, Copy)]
+pub struct Char {
+    data: [u8;7],
+    length: u8,
+}
+// point of this struct is to keep normal chars in stack, without heap allocation.
+#[derive(Clone)]
+pub enum Grapheme {
+    Char(Char),
+    Str(std::rc::Rc<str>),
 }
 impl Default for Cell {
     fn default() -> Self {
-        Self { char_: String::from(" "), hl: 0 }
+        Self { char_: Grapheme::space(), hl: 0 }
     }
 }
 
@@ -121,6 +133,85 @@ impl Data {
         self.apply_hl_id_forced(hl_id, term);
     }
 }
+impl AsRef<str> for Grapheme {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+impl core::fmt::Debug for Grapheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let as_str = 
+            match self {
+                Self::Char(arg0) => arg0.as_str(),
+                Self::Str(arg0) => &arg0,
+            };
+        return core::fmt::Debug::fmt(as_str, f);
+    }
+}
+impl core::fmt::Display for Grapheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let as_str = 
+            match self {
+                Self::Char(arg0) => arg0.as_str(),
+                Self::Str(arg0) => &arg0,
+            };
+        return core::fmt::Display::fmt(as_str, f);
+    }
+}
+impl Grapheme {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Grapheme::Char(char_) => char_.as_str(),
+            Grapheme::Str(rcstr) => &rcstr,
+        }
+    }
+    pub const fn space() -> Self {
+        let mut data = [0;7];
+        data[0] = b' ';
+        return Self::Char(Char { data, length: 1 });
+    }
+}
+impl From<&str> for Grapheme {
+    fn from(value: &str) -> Self {
+        if let Some(char_) = Char::from_str(value) {
+            Self::Char(char_)
+        } else {
+            Self::Str(value.into())
+        }
+    }
+}
+impl Char {
+    pub fn from_str(value: &str) -> Option<Self> {
+        let bytes = value.as_bytes();
+        if bytes.len() <= 7 {
+            let mut data = [0;7];
+            data[..bytes.len()].copy_from_slice(bytes);
+            return Some(Self {
+                data,
+                length: bytes.len().u8(),
+            });
+        } else {
+            return None;
+        }
+    }
+    pub fn as_str(&self) -> &str {
+        let data = &self.data[..self.length.u()];
+        #[cfg(debug_assertions)]
+        return str::from_utf8(data).unwrap();
+        #[cfg(not(debug_assertions))]
+        return unsafe { str::from_utf8_unchecked(data) };
+    }
+}
+impl Cell {
+    pub fn new(char_: &str, hl: u16) -> Self {
+        Self {
+            char_: Grapheme::from(char_),
+            hl,
+        }
+    }
+}
+
+
 
 mod app {
 

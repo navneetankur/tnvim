@@ -1,3 +1,4 @@
+use cheapclone::CheapClone as _;
 #[allow(unused_imports)]
 use log::{debug, trace};
 use nvimapi::{Nvimapi, Pairs, TryFromValue, uievent};
@@ -93,11 +94,16 @@ pub(super) async fn do_grid_line(app: &App, _nvim: &impl Nvimapi, events: Vec<ui
             } 
             let repeat = items.next().map(|v| v.as_i64().unwrap()).unwrap_or(1);
             // repeat should be signed as it's possible for neovim to send repeat = 0.
-            for _ in 0..repeat {
+            if repeat > 0 {
                 app.terminal.print(&text).unwrap();
                 let gcell = crate::nvim::data::Cell::new(&text, current_hl_id.u16());
-                data.surface[(row.u(), col.u())] = gcell;
+                data.surface[(row.u(), col.u())] = gcell.clone();
                 col += 1;
+                for _ in 1..repeat {
+                    app.terminal.print(&text).unwrap();
+                    data.surface[(row.u(), col.u())] = gcell.clone();
+                    col += 1;
+                }
             }
         }
         // debug!("g: {grid},r: {row}, c: {col}, t: {buffer}");
@@ -138,7 +144,7 @@ fn handle_scroll_row(app: &App, data: &mut std::cell::RefMut<'_, super::Data>, s
     // debug!("move {} to {}.", row, new_row);
     for col in scroll_event.left..scroll_event.right {
         let col = col.u();
-        let cell = core::mem::take(&mut data.surface[(row.u(), col)]);
+        let cell = data.surface[(row.u(), col)].cheap_clone();
         // let Some(cell) = cell else {continue;};
         data.apply_hl_id(cell.hl, &app.terminal);
         app.terminal.print(cell.char_.as_str()).unwrap();

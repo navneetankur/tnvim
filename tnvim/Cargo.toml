@@ -22,6 +22,7 @@ nix = {workspace = true, features = ["signal"]}
 color-eyre = { version = "0.6", default-features = false }
 log-panics = "2.1"
 anyhow.workspace = true
+cheapclone.workspace = true
 # signal-hook = {workspace = true , features = ["signal"]}
 
 [lints]

@@ -1,3 +1,4 @@
+use cheapclone::CheapClone;
 use nvimapi::{Color, uievent::Tabpage};
 use serde::Deserialize;
 use suffixes::CastIt;
@@ -158,6 +159,11 @@ impl core::fmt::Display for Grapheme {
         return core::fmt::Display::fmt(as_str, f);
     }
 }
+impl CheapClone for Grapheme {
+    fn cheap_clone(&self) -> Self {
+        self.clone()
+    }
+}
 impl Grapheme {
     pub fn as_str(&self) -> &str {
         match self {
@@ -200,6 +206,11 @@ impl Char {
         return str::from_utf8(data).unwrap();
         #[cfg(not(debug_assertions))]
         return unsafe { str::from_utf8_unchecked(data) };
+    }
+}
+impl CheapClone for Cell {
+    fn cheap_clone(&self) -> Self {
+        self.clone()
     }
 }
 impl Cell {

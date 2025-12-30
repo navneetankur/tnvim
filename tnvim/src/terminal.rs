@@ -18,12 +18,13 @@ impl Terminal {
         Ok(self)
     }
     pub fn enable_kitty_keyboard_protocol(&self) -> Ret<'_> {
+        // stdout().execute(event::PushKeyboardEnhancementFlags(event::KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES))?;
         stdout().execute(event::PushKeyboardEnhancementFlags(event::KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES))?;
+        log::trace!("push");
         Ok(self)
     }
-
-    pub fn set_title(&self, title: &str) -> error::Result<&Self> {
-        self.out.borrow_mut().queue(crossterm::terminal::SetTitle(title))?;
+    pub(crate) fn enable_bracketed_paste(&self) -> Ret<'_> {
+        stdout().execute(crossterm::event::EnableBracketedPaste)?;
         Ok(self)
     }
     pub fn enable_mouse_events(&self) -> Ret<'_> {
@@ -34,8 +35,9 @@ impl Terminal {
         stdout().execute(crossterm::event::EnableFocusChange)?;
         Ok(self )
     }
-    pub(crate) fn enable_bracketed_paste(&self) -> Ret<'_> {
-        stdout().execute(crossterm::event::EnableBracketedPaste)?;
+
+    pub fn set_title(&self, title: &str) -> error::Result<&Self> {
+        self.out.borrow_mut().queue(crossterm::terminal::SetTitle(title))?;
         Ok(self)
     }
 
@@ -88,8 +90,25 @@ impl Terminal {
         return Ok(self);
     }
 }
+pub fn leave_alternate_screen() {
+    stdout().execute(LeaveAlternateScreen).unwrap();
+}
+pub fn disable_raw_mode() {
+    crossterm::terminal::disable_raw_mode().unwrap();
+}
 pub fn disable_kitty_keyboard_protocol() -> Result<(), std::io::Error> {
     stdout().execute(event::PopKeyboardEnhancementFlags)?;
+    log::trace!("pop");
+    Ok(())
+}
+pub fn disable_bracketed_paste() -> std::result::Result<(), std::io::Error> {
+    stdout().execute(crossterm::event::DisableBracketedPaste).map(|_|())
+}
+pub fn disable_mouse_events() -> std::result::Result<(), std::io::Error> {
+    stdout().execute(crossterm::event::DisableMouseCapture).map(|_|())
+}
+pub fn disable_focus_events() -> Result<(), std::io::Error> {
+    stdout().execute(crossterm::event::DisableFocusChange)?;
     Ok(())
 }
 
@@ -107,20 +126,4 @@ impl Default for Terminal {
         Self { out: RefCell::new(Vec::with_capacity(50 * 100)), }
         // Self { out: RefCell::new(stdout()), }
     }
-}
-pub fn leave_alternate_screen() {
-    stdout().execute(LeaveAlternateScreen).unwrap();
-}
-pub fn disable_raw_mode() {
-    crossterm::terminal::disable_raw_mode().unwrap();
-}
-pub fn disable_bracketed_paste() -> std::result::Result<(), std::io::Error> {
-    stdout().execute(crossterm::event::DisableBracketedPaste).map(|_|())
-}
-pub fn disable_mouse_events() -> std::result::Result<(), std::io::Error> {
-    stdout().execute(crossterm::event::DisableMouseCapture).map(|_|())
-}
-pub fn disable_focus_events() -> Result<(), std::io::Error> {
-    stdout().execute(crossterm::event::EnableFocusChange)?;
-    Ok(())
 }

@@ -68,10 +68,12 @@ fn start_nvim_manager(app: Rc<App>, rt: Rc<LocalRuntime>, mut args: std::env::Ar
     let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
     if let Some(arg) = args.next() {
         if !new_nvim { nvim.nr().command("tabnew").unwrap(); }
-        nvim.nr().command(&format!("edit {}/{arg}", cwd.display())).unwrap();
+        let file = cwd.join(arg);
+        nvim.nr().command(&format!("edit {}", file.display())).unwrap();
     }
     for arg in args {
-        nvim.nr().command(&format!("edit {}/{arg}", cwd.display())).unwrap();
+        let file = cwd.join(arg);
+        nvim.nr().command(&format!("edit {}", file.display())).unwrap();
     }
     (task,nvim)
 }
@@ -93,12 +95,12 @@ pub fn exit() {
     std::process::exit(0);
 }
 fn before_exit() {
-    terminal::leave_alternate_screen();
-    terminal::disable_raw_mode();
-    let _ = terminal::disable_mouse_events();
-    let _ = terminal::disable_focus_events();
-    let _ = terminal::disable_bracketed_paste();
     let _ = terminal::disable_kitty_keyboard_protocol();
+    let _ = terminal::disable_bracketed_paste();
+    let _ = terminal::disable_focus_events();
+    let _ = terminal::disable_mouse_events();
+    terminal::disable_raw_mode();
+    terminal::leave_alternate_screen();
 }
 
 fn setup(term: &Terminal) {
